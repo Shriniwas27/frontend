@@ -48,14 +48,17 @@ const defaultFormData = {
   microserviceName: '',
   gcpProject: '',
   agentName: '',
+  rawFileContent: '',
   activityWindow: '24/7',
+  startTime: '09:00',
+  endTime: '17:00',
   operationMode: 'observation',
   permissions: {
     restartService: false,
     rollbackVersion: false,
     horizontalScaling: false,
   },
-  agentId: '',
+  dependencyAgentId: '',
   dependencyNote: '',
   notificationsEnabled: true,
   email: '',
@@ -96,6 +99,17 @@ const AddServiceModal = ({ isOpen, onClose, theme, onSuccess }) => {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      updateField('rawFileContent', event.target.result);
+    };
+    reader.readAsText(file);
   };
 
   const permissionItems = [
@@ -148,25 +162,30 @@ const AddServiceModal = ({ isOpen, onClose, theme, onSuccess }) => {
           {step === 1 && (
             <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2">
               <label className="block">
-                <span className={`text-sm font-bold mb-2 block ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Service Authentication</span>
-                <div className={`flex justify-center px-6 pt-8 pb-8 border-2 border-dashed rounded-xl cursor-pointer group transition-all ${
+                <span className={`text-sm font-bold mb-2 block ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>GCP Service Account Credentials</span>
+                <div 
+                  onClick={() => document.getElementById('json-upload').click()}
+                  className={`flex justify-center px-6 pt-8 pb-8 border-2 border-dashed rounded-xl cursor-pointer group transition-all ${
                   isDark ? 'border-dark-border bg-gray-900/30 hover:border-emerald-accent/50' : 'border-gray-200 bg-gray-50 hover:border-google-blue/50'
                 }`}>
-                  <div className="space-y-2 text-center">
-                    <Upload className={`mx-auto h-12 w-12 transition-colors ${isDark ? 'text-gray-500 group-hover:text-emerald-accent' : 'text-gray-400 group-hover:text-google-blue'}`} />
-                    <p className="text-sm text-gray-500">
-                      <span className={`font-bold ${isDark ? 'text-emerald-accent' : 'text-google-blue'}`}>Upload credentials.json</span> or drag & drop
+                  <div className="space-y-2 text-center text-xs">
+                    <Upload className={`mx-auto h-8 w-8 transition-colors ${isDark ? 'text-gray-500 group-hover:text-emerald-accent' : 'text-gray-400 group-hover:text-google-blue'}`} />
+                    <p className="text-gray-500">
+                      <span className={`font-bold ${isDark ? 'text-emerald-accent' : 'text-google-blue'}`}>Upload credentials.json</span> to auto-populate
                     </p>
-                    <p className="text-xs text-gray-600">JSON, PEM or YAML up to 1MB</p>
                   </div>
+                  <input id="json-upload" type="file" className="hidden" accept=".json,.pem,.yaml" onChange={handleFileChange} />
                 </div>
               </label>
+
               <div>
-                <label className={`text-xs font-bold uppercase tracking-widest mb-1.5 block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Or paste API Key</label>
-                <input
-                  type="password"
-                  placeholder="sk-••••••••••••••••••••••••••••••"
-                  className={`w-full border rounded-lg p-2.5 text-sm font-mono focus:outline-none focus:ring-2 transition-all ${
+                <label className={`text-[10px] font-black uppercase tracking-widest mb-1.5 block ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Or paste content here</label>
+                <textarea
+                  value={formData.rawFileContent}
+                  onChange={(e) => updateField('rawFileContent', e.target.value)}
+                  placeholder='{ "type": "service_account", ... }'
+                  rows="6"
+                  className={`w-full border rounded-lg p-3 text-xs font-mono focus:outline-none focus:ring-2 transition-all resize-none ${
                     isDark ? 'bg-gray-900 border-dark-border text-white focus:ring-emerald-accent/20 focus:border-emerald-accent' : 'bg-white border-gray-300 text-gray-900 focus:ring-google-blue/10 focus:border-google-blue'
                   }`}
                 />
@@ -218,6 +237,25 @@ const AddServiceModal = ({ isOpen, onClose, theme, onSuccess }) => {
                   ))}
                 </div>
               </div>
+
+              {formData.activityWindow === 'Custom Slot' && (
+                <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2">
+                  <InputField 
+                    label="Start Time" 
+                    type="time" 
+                    isDark={isDark} 
+                    value={formData.startTime} 
+                    onChange={(e) => updateField('startTime', e.target.value)} 
+                  />
+                  <InputField 
+                    label="End Time" 
+                    type="time" 
+                    isDark={isDark} 
+                    value={formData.endTime} 
+                    onChange={(e) => updateField('endTime', e.target.value)} 
+                  />
+                </div>
+              )}
             </div>
           )}
 
@@ -307,8 +345,8 @@ const AddServiceModal = ({ isOpen, onClose, theme, onSuccess }) => {
                   <label className="text-[10px] font-bold text-gray-500 uppercase block mb-1.5">Target Agent ID</label>
                   <input
                     type="text"
-                    value={formData.agentId}
-                    onChange={(e) => updateField('agentId', e.target.value)}
+                    value={formData.dependencyAgentId}
+                    onChange={(e) => updateField('dependencyAgentId', e.target.value)}
                     placeholder="nexus-v3-cluster"
                     className={`w-full border rounded-lg p-2.5 text-sm focus:outline-none transition-all ${
                       isDark ? 'bg-dark-bg border-dark-border text-white focus:border-emerald-accent' : 'bg-gray-50 border-gray-200 text-gray-900 focus:border-google-blue'
@@ -390,7 +428,7 @@ const AddServiceModal = ({ isOpen, onClose, theme, onSuccess }) => {
               {/* Error message */}
               {submitError && (
                 <div className="p-3 rounded-lg bg-rose-accent/10 border border-rose-accent/30 text-rose-accent text-xs font-semibold">
-                  ⚠ {submitError} — Make sure the backend server is running on port 5001.
+                  ⚠ {submitError} — Make sure the backend server is running on port 8000.
                 </div>
               )}
             </div>
