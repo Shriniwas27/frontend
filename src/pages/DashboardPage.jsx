@@ -21,6 +21,7 @@ import Sidebar from '../components/Sidebar';
 import TopHeader from '../components/TopHeader';
 import MetricCard from '../components/MetricCard';
 import ServiceCard from '../components/ServiceCard';
+import AgentDetailsModal from '../components/AgentDetailsModal';
 import AddServiceModal from '../components/AddServiceModal';
 import ConfigureServiceModal from '../components/ConfigureServiceModal';
 import GroupManager from '../components/GroupManager';
@@ -44,6 +45,7 @@ export default function DashboardPage() {
 
   // Modals
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAgentDetailsOpen, setIsAgentDetailsOpen] = useState(false);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [isGroupManagerOpen, setIsGroupManagerOpen] = useState(false);
   const [selectedService, setSelectedService] = useState(null);
@@ -123,7 +125,7 @@ export default function DashboardPage() {
   const handleAction = async (action, service) => {
     if (action === 'Configure') {
       setSelectedService(service);
-      setIsConfigOpen(true);
+      setIsAgentDetailsOpen(true);
     } else if (action === 'Delete') {
       if (!window.confirm(`Are you sure you want to delete ${getDisplayServiceName(service.microserviceName)}?`)) return;
       try {
@@ -250,6 +252,20 @@ export default function DashboardPage() {
           onSearchChange={setSearchQuery}
         />
 
+        {isAgentDetailsOpen && selectedService ? (
+          <div className="flex-1 overflow-hidden p-6">
+            <AgentDetailsModal
+              isOpen={isAgentDetailsOpen}
+              onClose={() => setIsAgentDetailsOpen(false)}
+              onEditConfiguration={() => {
+                setIsAgentDetailsOpen(false);
+                setIsConfigOpen(true);
+              }}
+              service={selectedService}
+              theme={theme}
+            />
+          </div>
+        ) : (
         <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
 
           <div className="flex justify-between items-end mb-8">
@@ -464,6 +480,7 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
+        )}
       </main>
 
       <AddServiceModal

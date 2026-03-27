@@ -72,7 +72,7 @@ const ServiceCard = ({
             theme === 'dark' ? 'bg-gray-800 hover:bg-gray-700 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
           }`}
         >
-          <Settings2 className="w-4 h-4" /> Edit Configuration
+          <Settings2 className="w-4 h-4" /> View Details
         </button>
         <button 
           onClick={() => onAction('Delete')}
