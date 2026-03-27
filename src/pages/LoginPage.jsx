@@ -22,6 +22,7 @@ const LoginPage = () => {
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  const [pendingSignupUser, setPendingSignupUser] = useState(null);
 
   const [userData, setUserData] = useState({
     name: '',
@@ -32,7 +33,8 @@ const LoginPage = () => {
 
   const [credData, setCredData] = useState({
     credentialName: '',
-    rawFileContent: ''
+    rawFileContent: '',
+    accountDetails: ''
   });
 
   const updateUser = (key, value) => setUserData(prev => ({ ...prev, [key]: value }));
@@ -67,7 +69,15 @@ const LoginPage = () => {
           navigate('/dashboard');
         }
       } else {
-        // --- REGISTER FLOW (STEP 1) ---
+        // --- REGISTER FLOW (STEP 1): persist user immediately ---
+        const regRes = await register(userData);
+        const user = regRes.data?.data;
+        if (!user) {
+          throw new Error('Could not create user. Please try again.');
+        }
+
+        setPendingSignupUser(user);
+        localStorage.setItem('cybermedic_user', JSON.stringify(user));
         setStep(2);
       }
     } catch (err) {
@@ -82,9 +92,12 @@ const LoginPage = () => {
     setIsSubmitting(true);
     setError(null);
     try {
-      // 1. Actually register the user now
-      const regRes = await register(userData);
-      const user = regRes.data?.data;
+      // 1. Reuse user created in step 1. Fallback to register only if missing.
+      let user = pendingSignupUser;
+      if (!user) {
+        const regRes = await register(userData);
+        user = regRes.data?.data;
+      }
       
       if (user) {
         localStorage.setItem('cybermedic_user', JSON.stringify(user));
@@ -94,10 +107,12 @@ const LoginPage = () => {
           await createAccount({
             userId: user.id,
             credentialName: credData.credentialName || 'Default GCP Account',
-            rawFileContent: credData.rawFileContent
+            rawFileContent: credData.rawFileContent,
+            accountDetails: credData.accountDetails
           });
         }
         
+        setPendingSignupUser(null);
         navigate('/dashboard');
       }
     } catch (err) {
@@ -314,6 +329,17 @@ const LoginPage = () => {
                         onChange={handleFileUpload} 
                       />
                     </div>
+                  </div>
+
+                  <div className="login-field">
+                    <label className="login-label">Account Details</label>
+                    <textarea
+                      value={credData.accountDetails}
+                      onChange={(e) => updateCred('accountDetails', e.target.value)}
+                      placeholder="Production account for project X, owner, notes..."
+                      rows="3"
+                      className="login-textarea"
+                    />
                   </div>
 
                   <div className="login-field">
