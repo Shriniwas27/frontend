@@ -12,6 +12,11 @@ import { createGroup, updateGroup, deleteGroup } from '../api';
 
 const COLORS = ['#1a73e8', '#34a853', '#ea4335', '#fbbc04', '#9334e6', '#e91e63', '#00bcd4', '#ff5722'];
 
+const getDisplayServiceName = (name) => {
+  if (typeof name !== 'string') return name;
+  return name.includes('/services/') ? name.split('/services/').pop() : name;
+};
+
 const GroupManager = ({ isOpen, onClose, theme, services, groups, onGroupsChange }) => {
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupType, setNewGroupType] = useState('environment');
@@ -185,7 +190,7 @@ const GroupManager = ({ isOpen, onClose, theme, services, groups, onGroupsChange
                     }`}>
                       {selectedServices.includes(s.id) && <CheckCircle2 className="w-3 h-3 text-white" />}
                     </div>
-                    <span className="truncate">{s.microserviceName}</span>
+                    <span className="truncate">{getDisplayServiceName(s.microserviceName)}</span>
                   </button>
                 ))}
               </div>
@@ -238,7 +243,7 @@ const GroupManager = ({ isOpen, onClose, theme, services, groups, onGroupsChange
                               <div className={`w-1.5 h-1.5 rounded-full ${
                                 s.status === 'Operational' ? 'bg-emerald-accent' : s.status === 'Degraded' ? 'bg-amber-400' : 'bg-rose-accent'
                               }`}></div>
-                              {s.microserviceName}
+                              {getDisplayServiceName(s.microserviceName)}
                               <button 
                                 onClick={() => handleRemoveServiceFromGroup(group.id, s.id)}
                                 className="text-gray-400 hover:text-rose-500 ml-1"

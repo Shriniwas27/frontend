@@ -16,6 +16,10 @@ const ServiceCard = ({
   const isOperational = status === 'Operational';
   const isDegraded = status === 'Degraded';
   const isDown = status === 'Down';
+  const displayServiceName =
+    typeof microserviceName === 'string' && microserviceName.includes('/services/')
+      ? microserviceName.split('/services/').pop()
+      : microserviceName;
   
   return (
     <div className={`border rounded-xl p-5 transition-all flex flex-col gap-4 relative overflow-hidden group ${
@@ -34,20 +38,18 @@ const ServiceCard = ({
             <Globe className="w-5 h-5" />
           </div>
           <div>
-            <h4 className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{microserviceName}</h4>
-            <p className="text-xs text-gray-500 uppercase">Project: {gcpProject || 'N/A'}</p>
+            <p className={`text-xs font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+              Agent: <span className="text-emerald-accent font-bold">{agentName}</span>
+            </p>
+            <h4 className={`font-semibold mt-0.5 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{displayServiceName}</h4>
+            <p className="text-xs text-gray-500 uppercase mt-0.5">Project: {gcpProject || 'N/A'}</p>
           </div>
         </div>
       </div>
 
       <div className="flex items-center gap-2 mt-2">
         <div className={`w-2 h-2 rounded-full ${isOperational ? 'bg-emerald-accent' : isDegraded ? 'bg-amber-400' : 'bg-rose-accent'} ${!isDown ? 'agent-active' : ''}`}></div>
-        <div className="flex flex-col">
-          <p className={`text-xs font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
-            Agent: <span className="text-emerald-accent font-bold">{agentName}</span>
-          </p>
-          <p className="text-[10px] text-gray-500 font-mono mt-0.5">{agentId}</p>
-        </div>
+        <p className="text-[10px] text-gray-500 font-mono">{agentId}</p>
       </div>
 
       <div className="space-y-2 mt-2">

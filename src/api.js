@@ -39,7 +39,8 @@ export const clearAuthSession = () => {
 
 // --- Services ---
 export const registerService = (data) => api.post('/api/services', data);
-export const getServices = () => api.get('/api/services');
+export const getServices = (userId) =>
+  api.get('/api/services', { params: userId ? { user_id: userId } : {} });
 export const updateService = (id, data) => api.put(`/api/services/${id}`, data);
 export const updateServiceStatus = (id, status) => api.patch(`/api/services/${id}/status`, { status });
 export const deleteService = (id) => api.delete(`/api/services/${id}`);

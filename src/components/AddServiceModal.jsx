@@ -201,7 +201,13 @@ const AddServiceModal = ({ isOpen, onClose, theme, onSuccess }) => {
     setIsSubmitting(true);
     setSubmitError(null);
     try {
-      await registerService(formData); // rawFileContent is dynamically obtained in the backend
+      const userStr = localStorage.getItem('cybermedic_user');
+      const userId = userStr ? JSON.parse(userStr).id : null;
+      if (!userId) {
+        throw new Error('User session not found. Please sign in again.');
+      }
+
+      await registerService({ ...formData, userId }); // credentials JSON is loaded in backend and stored per agent
       onSuccess(`Agent "${formData.agentName || 'Nexus'}" for "${formData.microserviceName || 'Service'}" initialized!`);
       onClose();
       setStep(1);
