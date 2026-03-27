@@ -15,13 +15,33 @@ export const deleteService = (id) => api.delete(`/api/services/${id}`);
 export const healthCheck = () => api.get('/api/health');
 
 // --- GCP Operations ---
-export const getGcpProjects = (agentId) => api.get(`/api/gcp/${agentId}/projects`);
-export const getGcpServices = (agentId, projectId) => api.get(`/api/gcp/${agentId}/services?project_id=${projectId}`);
+// (Agent-specific GCP operations were pruned from backend)
 
-// --- Global Settings & GCP ---
-export const saveGlobalCredentials = (data) => api.post('/api/settings/credentials', data);
-export const checkGlobalCredentials = () => api.get('/api/settings/credentials');
+
+// --- Global GCP Discovery ---
 export const getGlobalGcpProjects = () => api.get('/api/gcp/global/projects');
-export const getGlobalGcpServices = (projectId) => api.get(`/api/gcp/global/services?project_id=${projectId}`);
+export const getGlobalGcpServices = (projectId, location) => {
+  const url = `/api/gcp/global/services?project_id=${projectId}${location ? `&location=${location}` : ''}`;
+  return api.get(url);
+};
+
+// Aliases for backward compatibility with component imports
+export const getGcpProjects = (agentId) => getGlobalGcpProjects();
+export const getGcpServices = (agentId, projectId) => getGlobalGcpServices(projectId);
+
+// --- Auth & Users ---
+export const register = (data) => api.post('/api/auth/register', data);
+export const login = (data) => api.post('/api/auth/login', data);
+export const getUser = (userId) => api.get(`/api/users/${userId}`);
+
+// --- Accounts (Multi-credential) ---
+export const createAccount = (data) => api.post('/api/accounts', data);
+export const getAccounts = (userId) => api.get(`/api/accounts/${userId}`);
+
+// --- Groups ---
+export const createGroup = (data) => api.post('/api/groups', data);
+export const getGroups = (userId) => api.get(`/api/groups/${userId}`);
+export const updateGroup = (groupId, data) => api.put(`/api/groups/${groupId}`, data);
+export const deleteGroup = (groupId) => api.delete(`/api/groups/${groupId}`);
 
 export default api;

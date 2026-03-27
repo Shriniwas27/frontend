@@ -1,7 +1,7 @@
 import React from 'react';
 import { Search, Sun, Moon } from 'lucide-react';
 
-const TopHeader = ({ theme, toggleTheme, isDark }) => (
+const TopHeader = ({ theme, toggleTheme, isDark, searchQuery, onSearchChange }) => (
   <header className={`h-16 border-b flex items-center justify-between px-8 shrink-0 transition-colors ${
     isDark ? 'bg-dark-card/50 border-dark-border backdrop-blur-md' : 'bg-white border-gray-200'
   }`}>
@@ -9,7 +9,13 @@ const TopHeader = ({ theme, toggleTheme, isDark }) => (
       isDark ? 'bg-gray-900 border-dark-border focus-within:border-emerald-accent/50' : 'bg-gray-100 border-gray-200 focus-within:border-google-blue/50'
     }`}>
       <Search className="w-4 h-4 text-gray-500" />
-      <input type="text" placeholder="Search system nodes..." className={`bg-transparent border-none text-xs focus:outline-none w-full ${isDark ? 'text-white' : 'text-gray-900'}`} />
+      <input 
+        type="text" 
+        placeholder="Search services, agents, projects..." 
+        value={searchQuery || ''}
+        onChange={(e) => onSearchChange && onSearchChange(e.target.value)}
+        className={`bg-transparent border-none text-xs focus:outline-none w-full ${isDark ? 'text-white' : 'text-gray-900'}`} 
+      />
     </div>
 
     <div className="flex items-center gap-5">

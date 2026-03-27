@@ -8,6 +8,7 @@ import {
   Plus, 
   Bell, 
   Mail, 
+  Phone,
   Calendar,
   Eye,
   Bot,
@@ -70,8 +71,21 @@ const ToggleSwitch = ({ enabled, onClick, isDark }) => (
   </div>
 );
 
+const GCP_REGIONS = [
+  { label: 'Asia South 1 (Mumbai)', value: 'asia-south1' },
+  { label: 'Asia South 2 (Delhi)', value: 'asia-south2' },
+  { label: 'US Central 1 (Iowa)', value: 'us-central1' },
+  { label: 'US East 1 (South Carolina)', value: 'us-east1' },
+  { label: 'US West 1 (Oregon)', value: 'us-west1' },
+  { label: 'Europe West 1 (Belgium)', value: 'europe-west1' },
+  { label: 'Europe West 2 (London)', value: 'europe-west2' },
+  { label: 'Asia Southeast 1 (Singapore)', value: 'asia-southeast1' },
+  { label: 'Asia East 1 (Taiwan)', value: 'asia-east1' }
+];
+
 const defaultFormData = {
   gcpProject: '',
+  gcpLocation: 'asia-south1',
   microserviceName: '',
   agentName: '',
   activityWindow: '24/7',
@@ -87,6 +101,7 @@ const defaultFormData = {
   dependencyNote: '',
   notificationsEnabled: true,
   email: '',
+  contactNumber: '',
   restriction: 'No Restrictions',
 };
 
@@ -109,20 +124,25 @@ const AddServiceModal = ({ isOpen, onClose, theme, onSuccess }) => {
 
   useEffect(() => {
     if (formData.gcpProject && isOpen) {
-      fetchCloudServices(formData.gcpProject);
+      fetchCloudServices(formData.gcpProject, formData.gcpLocation);
     } else {
       setCloudServices([]);
     }
-  }, [formData.gcpProject, isOpen]);
+  }, [formData.gcpProject, formData.gcpLocation, isOpen]);
 
   const fetchProjects = async () => {
     setIsLoadingProjects(true);
     try {
       const res = await getGlobalGcpProjects();
       if (res.data?.success && res.data.data) {
-        setProjects(res.data.data.map(p => ({ label: p, value: p })));
-        if (res.data.data.length === 1) {
-          updateField('gcpProject', res.data.data[0]);
+        // API returns [{project_id, display_name, state}, ...]
+        const mapped = res.data.data.map(p => ({
+          label: p.display_name ? `${p.display_name} (${p.project_id})` : p.project_id,
+          value: p.project_id
+        }));
+        setProjects(mapped);
+        if (mapped.length === 1) {
+          updateField('gcpProject', mapped[0].value);
         }
       }
     } catch (err) {
@@ -132,12 +152,20 @@ const AddServiceModal = ({ isOpen, onClose, theme, onSuccess }) => {
     }
   };
 
-  const fetchCloudServices = async (projectId) => {
+  const fetchCloudServices = async (projectId, location) => {
     setIsLoadingServices(true);
     try {
-      const res = await getGlobalGcpServices(projectId);
+      const res = await getGlobalGcpServices(projectId, location);
       if (res.data?.success && res.data.data) {
-        setCloudServices(res.data.data.map(s => ({ label: s, value: s })));
+        // API returns array of service name objects: [{name: "projects/.../services/svc", uri: "..."}]
+        const mapped = res.data.data.map(s => {
+          const fullName = s.name || s.service_name || s;
+          // Extract short name from projects/PROJ/locations/LOC/services/SVC
+          const parts = fullName.split('/');
+          const shortName = parts[parts.length - 1];
+          return { label: shortName, value: fullName };
+        });
+        setCloudServices(mapped);
       }
     } catch (err) {
       console.error("Failed to fetch Cloud Run services for project", err);
@@ -237,6 +265,18 @@ const AddServiceModal = ({ isOpen, onClose, theme, onSuccess }) => {
                 placeholder="Select a GCP Project"
                 options={projects}
                 loading={isLoadingProjects}
+              />
+              <DropdownField 
+                label="GCP Region" 
+                isDark={isDark} 
+                icon={RefreshCw}
+                value={formData.gcpLocation}
+                onChange={(e) => {
+                  updateField('gcpLocation', e.target.value);
+                  updateField('microserviceName', '');
+                }}
+                placeholder="Select a Region"
+                options={GCP_REGIONS}
               />
               <DropdownField 
                 label="Cloud Run Service" 
@@ -435,21 +475,36 @@ const AddServiceModal = ({ isOpen, onClose, theme, onSuccess }) => {
                     </div>
                   </div>
                   <div>
-                    <label className={`text-xs font-bold mb-1.5 block ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Alert Restriction</label>
+                    <label className={`text-xs font-bold mb-1.5 block ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Contact Number</label>
                     <div className="relative">
-                      <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                      <select
-                        value={formData.restriction}
-                        onChange={(e) => updateField('restriction', e.target.value)}
-                        className={`w-full pl-10 border rounded-lg p-2.5 text-sm focus:outline-none appearance-none transition-all ${
+                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                      <input
+                        type="tel"
+                        value={formData.contactNumber}
+                        onChange={(e) => updateField('contactNumber', e.target.value)}
+                        placeholder="+91 98765 43210"
+                        className={`w-full pl-10 border rounded-lg p-2.5 text-sm focus:outline-none transition-all ${
                           isDark ? 'bg-gray-900 border-dark-border text-white focus:border-emerald-accent' : 'bg-white border-gray-300 text-gray-900 focus:border-google-blue'
                         }`}
-                      >
-                        <option>No Restrictions</option>
-                        <option>Business Hours Only</option>
-                        <option>Weekend Exclusion</option>
-                      </select>
+                      />
                     </div>
+                  </div>
+                </div>
+                <div>
+                  <label className={`text-xs font-bold mb-1.5 block ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Alert Restriction</label>
+                  <div className="relative">
+                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                    <select
+                      value={formData.restriction}
+                      onChange={(e) => updateField('restriction', e.target.value)}
+                      className={`w-full pl-10 border rounded-lg p-2.5 text-sm focus:outline-none appearance-none transition-all ${
+                        isDark ? 'bg-gray-900 border-dark-border text-white focus:border-emerald-accent' : 'bg-white border-gray-300 text-gray-900 focus:border-google-blue'
+                      }`}
+                    >
+                      <option>No Restrictions</option>
+                      <option>Business Hours Only</option>
+                      <option>Weekend Exclusion</option>
+                    </select>
                   </div>
                 </div>
               </div>
