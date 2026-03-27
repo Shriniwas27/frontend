@@ -14,7 +14,7 @@ import {
   Lock,
   KeyRound
 } from 'lucide-react';
-import { register, login, createAccount } from '../api';
+import { register, login, createAccount, clearAuthSession, storeAuthSession } from '../api';
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -22,6 +22,7 @@ const LoginPage = () => {
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  const [pendingSignupUser, setPendingSignupUser] = useState(null);
 
   const [userData, setUserData] = useState({
     name: '',
@@ -32,7 +33,8 @@ const LoginPage = () => {
 
   const [credData, setCredData] = useState({
     credentialName: '',
-    rawFileContent: ''
+    rawFileContent: '',
+    accountDetails: ''
   });
 
   const updateUser = (key, value) => setUserData(prev => ({ ...prev, [key]: value }));
@@ -63,11 +65,19 @@ const LoginPage = () => {
         });
 
         if (res.data?.success) {
-          localStorage.setItem('cybermedic_user', JSON.stringify(res.data.data));
+          storeAuthSession(res.data.data, res.data.accessToken);
           navigate('/dashboard');
         }
       } else {
-        // --- REGISTER FLOW (STEP 1) ---
+        // --- REGISTER FLOW (STEP 1): persist user immediately ---
+        const regRes = await register(userData);
+        const user = regRes.data?.data;
+        if (!user) {
+          throw new Error('Could not create user. Please try again.');
+        }
+
+        setPendingSignupUser(user);
+        storeAuthSession(user, regRes.data?.accessToken);
         setStep(2);
       }
     } catch (err) {
@@ -82,6 +92,7 @@ const LoginPage = () => {
     setIsSubmitting(true);
     setError(null);
     try {
+<<<<<<< HEAD
       // 1. Actually register the user now
       const regRes = await register(userData);
       const user = regRes.data?.data;
@@ -89,15 +100,37 @@ const LoginPage = () => {
       if (user) {
         localStorage.setItem('cybermedic_user', JSON.stringify(user));
 
+=======
+      // 1. Reuse user created in step 1. Fallback to register only if missing.
+      let user = pendingSignupUser;
+      let fallbackToken = null;
+      if (!user) {
+        const regRes = await register(userData);
+        user = regRes.data?.data;
+        fallbackToken = regRes.data?.accessToken || null;
+      }
+      
+      if (user) {
+        if (!localStorage.getItem('cybermedic_token')) {
+          storeAuthSession(user, fallbackToken);
+        }
+        
+>>>>>>> ea86c5974567c7543aab90b77e544e445977e2ee
         // 2. Create account (GCP Credentials) if provided
         if (credData.rawFileContent) {
           await createAccount({
             userId: user.id,
             credentialName: credData.credentialName || 'Default GCP Account',
-            rawFileContent: credData.rawFileContent
+            rawFileContent: credData.rawFileContent,
+            accountDetails: credData.accountDetails
           });
         }
+<<<<<<< HEAD
 
+=======
+        
+        setPendingSignupUser(null);
+>>>>>>> ea86c5974567c7543aab90b77e544e445977e2ee
         navigate('/dashboard');
       }
     } catch (err) {
@@ -257,9 +290,9 @@ const LoginPage = () => {
 
                 <div className="login-switch-mode">
                   {authMode === 'register' ? (
-                    <p>Already have an account? <button onClick={() => { setAuthMode('login'); setError(null); }}>Sign In</button></p>
+                    <p>Already have an account? <button onClick={() => { clearAuthSession(); setAuthMode('login'); setError(null); }}>Sign In</button></p>
                   ) : (
-                    <p>New to CyberMedic? <button onClick={() => { setAuthMode('register'); setError(null); }}>Create Account</button></p>
+                    <p>New to CyberMedic? <button onClick={() => { clearAuthSession(); setAuthMode('register'); setError(null); }}>Create Account</button></p>
                   )}
                 </div>
               </div>
@@ -314,6 +347,17 @@ const LoginPage = () => {
                         onChange={handleFileUpload}
                       />
                     </div>
+                  </div>
+
+                  <div className="login-field">
+                    <label className="login-label">Account Details</label>
+                    <textarea
+                      value={credData.accountDetails}
+                      onChange={(e) => updateCred('accountDetails', e.target.value)}
+                      placeholder="Production account for project X, owner, notes..."
+                      rows="3"
+                      className="login-textarea"
+                    />
                   </div>
 
                   <div className="login-field">

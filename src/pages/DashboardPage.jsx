@@ -215,6 +215,7 @@ export default function DashboardPage() {
 
   const handleLogout = () => {
     localStorage.removeItem('cybermedic_user');
+    localStorage.removeItem('cybermedic_token');
     navigate('/');
   };
 
