@@ -31,7 +31,7 @@ const InputField = ({ label, isDark, ...props }) => (
   </div>
 );
 
-const DropdownField = ({ label, isDark, icon: Icon, options, value, onChange, placeholder, loading }) => (
+const DropdownField = ({ label, isDark, icon: Icon, options, value, onChange, placeholder, loading, disabled = false }) => (
   <div>
     <label className={`text-sm font-bold mb-1.5 block ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{label}</label>
     <div className="relative">
@@ -39,7 +39,7 @@ const DropdownField = ({ label, isDark, icon: Icon, options, value, onChange, pl
       <select
         value={value}
         onChange={onChange}
-        disabled={loading}
+        disabled={loading || disabled}
         className={`w-full ${Icon ? 'pl-10' : 'pl-3'} pr-10 border rounded-lg p-3 text-sm focus:outline-none appearance-none transition-all ${
           isDark 
             ? 'bg-gray-900 border-dark-border text-white focus:ring-emerald-accent/20 focus:border-emerald-accent disabled:opacity-50' 
@@ -256,24 +256,26 @@ const ConfigureServiceModal = ({ isOpen, onClose, theme, onSuccess, service }) =
                   isDark={isDark} 
                   icon={Cloud}
                   value={formData.gcpProject}
-                  onChange={(e) => {
-                    updateField('gcpProject', e.target.value);
-                    updateField('microserviceName', ''); // reset service when project changes
-                  }}
+                  onChange={() => {}}
                   placeholder="Select a GCP Project"
                   options={projects}
-                  loading={isLoadingProjects}
+                  loading={isLoadingProjects || isSubmitting}
+                  disabled={true}
                 />
                 <DropdownField 
                   label="Cloud Run Service" 
                   isDark={isDark} 
                   icon={Server}
                   value={formData.microserviceName}
-                  onChange={(e) => updateField('microserviceName', e.target.value)}
+                  onChange={() => {}}
                   placeholder="Select a Service"
                   options={cloudServices}
-                  loading={isLoadingServices}
+                  loading={isLoadingServices || isSubmitting}
+                  disabled={true}
                 />
+                <p className={`md:col-span-2 text-xs ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+                  Project ID and service assignment are locked after agent creation.
+                </p>
              </div>
           </section>
 
