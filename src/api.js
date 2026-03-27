@@ -1,12 +1,37 @@
 import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001';
+export const AUTH_TOKEN_KEY = 'cybermedic_token';
+export const AUTH_USER_KEY = 'cybermedic_user';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: { 'Content-Type': 'application/json' },
   timeout: 10000,
 });
+
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem(AUTH_TOKEN_KEY);
+  if (token) {
+    config.headers = config.headers || {};
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+export const storeAuthSession = (user, token) => {
+  if (user) {
+    localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
+  }
+  if (token) {
+    localStorage.setItem(AUTH_TOKEN_KEY, token);
+  }
+};
+
+export const clearAuthSession = () => {
+  localStorage.removeItem(AUTH_USER_KEY);
+  localStorage.removeItem(AUTH_TOKEN_KEY);
+};
 
 // --- Services ---
 export const registerService = (data) => api.post('/api/services', data);

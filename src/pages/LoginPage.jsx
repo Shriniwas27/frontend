@@ -14,7 +14,7 @@ import {
   Lock,
   KeyRound
 } from 'lucide-react';
-import { register, login, createAccount } from '../api';
+import { register, login, createAccount, clearAuthSession, storeAuthSession } from '../api';
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -65,7 +65,7 @@ const LoginPage = () => {
         });
         
         if (res.data?.success) {
-          localStorage.setItem('cybermedic_user', JSON.stringify(res.data.data));
+          storeAuthSession(res.data.data, res.data.accessToken);
           navigate('/dashboard');
         }
       } else {
@@ -77,7 +77,7 @@ const LoginPage = () => {
         }
 
         setPendingSignupUser(user);
-        localStorage.setItem('cybermedic_user', JSON.stringify(user));
+        storeAuthSession(user, regRes.data?.accessToken);
         setStep(2);
       }
     } catch (err) {
@@ -94,13 +94,17 @@ const LoginPage = () => {
     try {
       // 1. Reuse user created in step 1. Fallback to register only if missing.
       let user = pendingSignupUser;
+      let fallbackToken = null;
       if (!user) {
         const regRes = await register(userData);
         user = regRes.data?.data;
+        fallbackToken = regRes.data?.accessToken || null;
       }
       
       if (user) {
-        localStorage.setItem('cybermedic_user', JSON.stringify(user));
+        if (!localStorage.getItem('cybermedic_token')) {
+          storeAuthSession(user, fallbackToken);
+        }
         
         // 2. Create account (GCP Credentials) if provided
         if (credData.rawFileContent) {
@@ -272,9 +276,9 @@ const LoginPage = () => {
 
                 <div className="login-switch-mode">
                   {authMode === 'register' ? (
-                    <p>Already have an account? <button onClick={() => { setAuthMode('login'); setError(null); }}>Sign In</button></p>
+                    <p>Already have an account? <button onClick={() => { clearAuthSession(); setAuthMode('login'); setError(null); }}>Sign In</button></p>
                   ) : (
-                    <p>New to CyberMedic? <button onClick={() => { setAuthMode('register'); setError(null); }}>Create Account</button></p>
+                    <p>New to CyberMedic? <button onClick={() => { clearAuthSession(); setAuthMode('register'); setError(null); }}>Create Account</button></p>
                   )}
                 </div>
               </div>
