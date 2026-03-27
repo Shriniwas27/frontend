@@ -109,12 +109,12 @@ const LoginPage = () => {
         user = regRes.data?.data;
         fallbackToken = regRes.data?.accessToken || null;
       }
-      
+
       if (user) {
         if (!localStorage.getItem('cybermedic_token')) {
           storeAuthSession(user, fallbackToken);
         }
-        
+
 >>>>>>> ea86c5974567c7543aab90b77e544e445977e2ee
         // 2. Create account (GCP Credentials) if provided
         if (credData.rawFileContent) {
@@ -128,7 +128,7 @@ const LoginPage = () => {
 <<<<<<< HEAD
 
 =======
-        
+
         setPendingSignupUser(null);
 >>>>>>> ea86c5974567c7543aab90b77e544e445977e2ee
         navigate('/dashboard');
