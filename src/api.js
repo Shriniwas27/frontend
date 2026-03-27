@@ -44,7 +44,9 @@ export const getServices = (userId) =>
 export const updateService = (id, data) => api.put(`/api/services/${id}`, data);
 export const updateServiceStatus = (id, status) => api.patch(`/api/services/${id}/status`, { status });
 export const deleteService = (id) => api.delete(`/api/services/${id}`);
-export const getAgentState = (agentId) => api.get(`/api/agents/${agentId}/state`);
+export const getAgentState = (agentId) => api.get(`/api/agents/${agentId}/state`, { timeout: 30000 });
+export const getAgentLogsStreamUrl = (agentId, onlyErrors = false) =>
+  `${API_BASE_URL}/api/agents/${encodeURIComponent(agentId)}/logs/stream?only_errors=${onlyErrors}`;
 export const healthCheck = () => api.get('/api/health');
 
 // --- GCP Operations ---

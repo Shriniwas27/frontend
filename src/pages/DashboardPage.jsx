@@ -58,13 +58,7 @@ export default function DashboardPage() {
   // User info from localStorage
   const [currentUser, setCurrentUser] = useState(null);
 
-  const [logs, setLogs] = useState([
-    { id: 1, time: '12:44:02', agent: 'Nexus-Prime', action: 'Detected 504 on Auth-Service. Applying Horizontal Scale...', status: 'success' },
-    { id: 2, time: '12:45:15', agent: 'Sentinel-V3', action: 'Latency spike in Payment-Gate. Rerouting traffic to DB-Clone-02.', status: 'success' },
-    { id: 3, time: '12:48:30', agent: 'Astra-09', action: 'Suspicious payload detected in User-Profile-Sync. Blocking IP block 45.x.x.x', status: 'warning' },
-    { id: 4, time: '12:50:01', agent: 'Nexus-Prime', action: 'Microservice recovery complete. Scaling back pods to baseline.', status: 'success' },
-    { id: 5, time: '12:51:12', agent: 'Cyber-Medic', action: 'Memory leak detected in Search-Index. Scheduled graceful restart.', status: 'success' }
-  ]);
+  const [logs, setLogs] = useState([]);
 
   const showToast = (message, type = 'info') => {
     setToast({ message, type });
@@ -470,13 +464,19 @@ export default function DashboardPage() {
             </div>
 
             <div className="space-y-4 font-mono text-xs">
-              {logs.map((log) => (
-                <div key={log.id} className={`flex gap-4 p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-gray-800/30' : 'hover:bg-gray-50'}`}>
-                  <span className="text-gray-500">[{log.time}]</span>
-                  <span className={isDark ? 'text-emerald-accent' : 'text-google-blue'}>[{log.agent}]</span>
-                  <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>{log.action}</span>
+              {logs.length > 0 ? (
+                logs.map((log) => (
+                  <div key={log.id} className={`flex gap-4 p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-gray-800/30' : 'hover:bg-gray-50'}`}>
+                    <span className="text-gray-500">[{log.time}]</span>
+                    <span className={isDark ? 'text-emerald-accent' : 'text-google-blue'}>[{log.agent}]</span>
+                    <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>{log.action}</span>
+                  </div>
+                ))
+              ) : (
+                <div className={`p-3 rounded-lg border text-xs ${isDark ? 'bg-gray-900/40 border-dark-border text-gray-500' : 'bg-gray-50 border-gray-200 text-gray-500'}`}>
+                  No live logs yet.
                 </div>
-              ))}
+              )}
             </div>
           </div>
         </div>
