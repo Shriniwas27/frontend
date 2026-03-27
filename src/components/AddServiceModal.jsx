@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
-import { registerService } from '../api';
+import React, { useState, useEffect } from 'react';
+import { registerService, getGlobalGcpProjects, getGlobalGcpServices } from '../api';
 import { 
   XCircle, 
   ChevronLeft, 
-  Upload, 
   Zap, 
   Clock, 
   Plus, 
@@ -16,10 +15,12 @@ import {
   LayoutGrid,
   RefreshCw,
   CheckCircle2,
-  Loader2
+  Loader2,
+  Cloud,
+  Server
 } from 'lucide-react';
 
-const STEPS = ['Credentials', 'Config', 'Guardrails', 'Topology', 'Alerts'];
+const STEPS = ['Cloud Target', 'Identity', 'Guardrails', 'Topology', 'Alerts'];
 
 const InputField = ({ label, isDark, ...props }) => (
   <div>
@@ -30,6 +31,31 @@ const InputField = ({ label, isDark, ...props }) => (
       }`}
       {...props}
     />
+  </div>
+);
+
+const DropdownField = ({ label, isDark, icon: Icon, options, value, onChange, placeholder, loading }) => (
+  <div>
+    <label className={`text-sm font-bold mb-1.5 block ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{label}</label>
+    <div className="relative">
+      {Icon && <Icon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />}
+      <select
+        value={value}
+        onChange={onChange}
+        disabled={loading}
+        className={`w-full ${Icon ? 'pl-10' : 'pl-3'} pr-10 border rounded-lg p-3 text-sm focus:outline-none appearance-none transition-all ${
+          isDark 
+            ? 'bg-gray-900 border-dark-border text-white focus:ring-emerald-accent/20 focus:border-emerald-accent disabled:opacity-50' 
+            : 'bg-white border-gray-300 text-gray-900 focus:ring-google-blue/10 focus:border-google-blue disabled:opacity-50'
+        }`}
+      >
+        <option value="">{loading ? 'Loading...' : placeholder}</option>
+        {options.map((opt, idx) => (
+          <option key={idx} value={opt.value}>{opt.label}</option>
+        ))}
+      </select>
+      {loading && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-gray-500" />}
+    </div>
   </div>
 );
 
@@ -45,10 +71,9 @@ const ToggleSwitch = ({ enabled, onClick, isDark }) => (
 );
 
 const defaultFormData = {
-  microserviceName: '',
   gcpProject: '',
+  microserviceName: '',
   agentName: '',
-  rawFileContent: '',
   activityWindow: '24/7',
   startTime: '09:00',
   endTime: '17:00',
@@ -71,6 +96,56 @@ const AddServiceModal = ({ isOpen, onClose, theme, onSuccess }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
 
+  const [projects, setProjects] = useState([]);
+  const [cloudServices, setCloudServices] = useState([]);
+  const [isLoadingProjects, setIsLoadingProjects] = useState(false);
+  const [isLoadingServices, setIsLoadingServices] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchProjects();
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (formData.gcpProject && isOpen) {
+      fetchCloudServices(formData.gcpProject);
+    } else {
+      setCloudServices([]);
+    }
+  }, [formData.gcpProject, isOpen]);
+
+  const fetchProjects = async () => {
+    setIsLoadingProjects(true);
+    try {
+      const res = await getGlobalGcpProjects();
+      if (res.data?.success && res.data.data) {
+        setProjects(res.data.data.map(p => ({ label: p, value: p })));
+        if (res.data.data.length === 1) {
+          updateField('gcpProject', res.data.data[0]);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to fetch GCP projects", err);
+    } finally {
+      setIsLoadingProjects(false);
+    }
+  };
+
+  const fetchCloudServices = async (projectId) => {
+    setIsLoadingServices(true);
+    try {
+      const res = await getGlobalGcpServices(projectId);
+      if (res.data?.success && res.data.data) {
+        setCloudServices(res.data.data.map(s => ({ label: s, value: s })));
+      }
+    } catch (err) {
+      console.error("Failed to fetch Cloud Run services for project", err);
+    } finally {
+      setIsLoadingServices(false);
+    }
+  };
+
   if (!isOpen) return null;
   const isDark = theme === 'dark';
 
@@ -84,32 +159,17 @@ const AddServiceModal = ({ isOpen, onClose, theme, onSuccess }) => {
     setIsSubmitting(true);
     setSubmitError(null);
     try {
-      await registerService(formData);
+      await registerService(formData); // rawFileContent is dynamically obtained in the backend
       onSuccess(`Agent "${formData.agentName || 'Nexus'}" for "${formData.microserviceName || 'Service'}" initialized!`);
       onClose();
       setStep(1);
       setFormData(defaultFormData);
     } catch (err) {
-      const msg =
-        err?.response?.data?.detail ||
-        err?.response?.data?.message ||
-        err.message ||
-        'Submission failed';
+      const msg = err?.response?.data?.detail || err?.response?.data?.message || err.message || 'Submission failed';
       setSubmitError(msg);
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      updateField('rawFileContent', event.target.result);
-    };
-    reader.readAsText(file);
   };
 
   const permissionItems = [
@@ -158,66 +218,42 @@ const AddServiceModal = ({ isOpen, onClose, theme, onSuccess }) => {
         {/* Body */}
         <div className="p-8 min-h-[370px] overflow-y-auto">
 
-          {/* Step 1: Credentials */}
+          {/* Step 1: Cloud Target (Replaced Credentials) */}
           {step === 1 && (
-            <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2">
-              <label className="block">
-                <span className={`text-sm font-bold mb-2 block ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>GCP Service Account Credentials</span>
-                <div 
-                  onClick={() => document.getElementById('json-upload').click()}
-                  className={`flex justify-center px-6 pt-8 pb-8 border-2 border-dashed rounded-xl cursor-pointer group transition-all ${
-                  isDark ? 'border-dark-border bg-gray-900/30 hover:border-emerald-accent/50' : 'border-gray-200 bg-gray-50 hover:border-google-blue/50'
-                }`}>
-                  <div className="space-y-2 text-center text-xs">
-                    <Upload className={`mx-auto h-8 w-8 transition-colors ${isDark ? 'text-gray-500 group-hover:text-emerald-accent' : 'text-gray-400 group-hover:text-google-blue'}`} />
-                    <p className="text-gray-500">
-                      <span className={`font-bold ${isDark ? 'text-emerald-accent' : 'text-google-blue'}`}>Upload credentials.json</span> to auto-populate
-                    </p>
-                  </div>
-                  <input id="json-upload" type="file" className="hidden" accept=".json,.pem,.yaml" onChange={handleFileChange} />
-                </div>
-              </label>
-
-              <div>
-                <label className={`text-[10px] font-black uppercase tracking-widest mb-1.5 block ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Or paste content here</label>
-                <textarea
-                  value={formData.rawFileContent}
-                  onChange={(e) => updateField('rawFileContent', e.target.value)}
-                  placeholder='{ "type": "service_account", ... }'
-                  rows="6"
-                  className={`w-full border rounded-lg p-3 text-xs font-mono focus:outline-none focus:ring-2 transition-all resize-none ${
-                    isDark ? 'bg-gray-900 border-dark-border text-white focus:ring-emerald-accent/20 focus:border-emerald-accent' : 'bg-white border-gray-300 text-gray-900 focus:ring-google-blue/10 focus:border-google-blue'
-                  }`}
-                />
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
+              <div className="bg-google-blue/10 border border-google-blue/30 rounded-xl p-4 flex gap-4 text-sm text-google-blue font-medium mb-4">
+                Global GCP credentials are automatically inherited for this new agent. Select the target cloud resources below.
               </div>
+
+              <DropdownField 
+                label="GCP Project ID" 
+                isDark={isDark} 
+                icon={Cloud}
+                value={formData.gcpProject}
+                onChange={(e) => {
+                  updateField('gcpProject', e.target.value);
+                  updateField('microserviceName', ''); 
+                }}
+                placeholder="Select a GCP Project"
+                options={projects}
+                loading={isLoadingProjects}
+              />
+              <DropdownField 
+                label="Cloud Run Service" 
+                isDark={isDark} 
+                icon={Server}
+                value={formData.microserviceName}
+                onChange={(e) => updateField('microserviceName', e.target.value)}
+                placeholder="Select a Service"
+                options={cloudServices}
+                loading={isLoadingServices}
+              />
             </div>
           )}
 
-          {/* Step 2: Config */}
+          {/* Step 2: Identity & Schedule */}
           {step === 2 && (
             <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2">
-              <div>
-                <InputField 
-                  label="Microservice Name" 
-                  isDark={isDark} 
-                  placeholder="e.g., payment-gateway" 
-                  value={formData.microserviceName} 
-                  onChange={(e) => updateField('microserviceName', e.target.value)} 
-                />
-                <p className="text-[10px] text-gray-500 mt-1 font-medium">Must match your <span className="font-bold">Cloud Run app name</span></p>
-              </div>
-
-              <div>
-                <InputField 
-                  label="GCP Project Name" 
-                  isDark={isDark} 
-                  placeholder="e.g., cybermedic-prod" 
-                  value={formData.gcpProject} 
-                  onChange={(e) => updateField('gcpProject', e.target.value)} 
-                />
-                <p className="text-[10px] text-gray-500 mt-1 font-medium">Must match your <span className="font-bold">GCP project ID</span></p>
-              </div>
-
               <InputField label="Agent Name" isDark={isDark} placeholder="e.g., Nexus-Prime" value={formData.agentName} onChange={(e) => updateField('agentName', e.target.value)} />
               <div>
                 <label className={`text-sm font-bold mb-1.5 block ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Agent Activity Window</label>
@@ -262,8 +298,6 @@ const AddServiceModal = ({ isOpen, onClose, theme, onSuccess }) => {
           {/* Step 3: Guardrails */}
           {step === 3 && (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
-
-              {/* Operation Mode */}
               <div>
                 <h3 className={`text-[10px] font-black uppercase tracking-widest mb-3 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Operation Mode</h3>
                 <div className="grid grid-cols-2 gap-3">
@@ -276,12 +310,8 @@ const AddServiceModal = ({ isOpen, onClose, theme, onSuccess }) => {
                       onClick={() => updateField('operationMode', mode.id)}
                       className={`flex flex-col items-start gap-1.5 p-4 border rounded-xl text-left transition-all ${
                         formData.operationMode === mode.id
-                          ? (isDark
-                              ? 'bg-emerald-accent/10 border-emerald-accent'
-                              : 'bg-google-blue/5 border-google-blue')
-                          : (isDark
-                              ? 'bg-gray-900 border-dark-border hover:border-gray-600'
-                              : 'bg-white border-gray-200 hover:border-gray-300')
+                          ? (isDark ? 'bg-emerald-accent/10 border-emerald-accent' : 'bg-google-blue/5 border-google-blue')
+                          : (isDark ? 'bg-gray-900 border-dark-border hover:border-gray-600' : 'bg-white border-gray-200 hover:border-gray-300')
                       }`}
                     >
                       <div className="flex items-center gap-2">
@@ -294,7 +324,6 @@ const AddServiceModal = ({ isOpen, onClose, theme, onSuccess }) => {
                 </div>
               </div>
 
-              {/* Action Permissions */}
               <div className={`transition-all duration-300 ${formData.operationMode === 'autonomous' ? 'opacity-100' : 'opacity-40 pointer-events-none'}`}>
                 <h3 className={`text-[10px] font-black uppercase tracking-widest mb-3 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
                   Action Permissions <span className="normal-case font-medium">(Autonomous only)</span>
@@ -425,10 +454,9 @@ const AddServiceModal = ({ isOpen, onClose, theme, onSuccess }) => {
                 </div>
               </div>
 
-              {/* Error message */}
               {submitError && (
                 <div className="p-3 rounded-lg bg-rose-accent/10 border border-rose-accent/30 text-rose-accent text-xs font-semibold">
-                  ⚠ {submitError} — Make sure the backend server is running on port 8000.
+                  ⚠ {submitError}
                 </div>
               )}
             </div>
@@ -451,7 +479,7 @@ const AddServiceModal = ({ isOpen, onClose, theme, onSuccess }) => {
 
           <button
             onClick={() => step < 5 ? setStep(s => s + 1) : handleInitialize()}
-            disabled={isSubmitting}
+            disabled={isSubmitting || (step === 1 && (!formData.gcpProject || !formData.microserviceName))}
             className={`flex items-center gap-2 px-8 py-2.5 rounded-lg font-bold text-sm hover:scale-105 active:scale-95 transition-all shadow-lg disabled:opacity-60 disabled:cursor-not-allowed disabled:scale-100 ${
               isDark ? 'bg-emerald-accent text-dark-bg shadow-emerald-accent/20' : 'bg-google-blue text-white shadow-google-blue/20'
             }`}
