@@ -92,15 +92,6 @@ const LoginPage = () => {
     setIsSubmitting(true);
     setError(null);
     try {
-<<<<<<< HEAD
-      // 1. Actually register the user now
-      const regRes = await register(userData);
-      const user = regRes.data?.data;
-
-      if (user) {
-        localStorage.setItem('cybermedic_user', JSON.stringify(user));
-
-=======
       // 1. Reuse user created in step 1. Fallback to register only if missing.
       let user = pendingSignupUser;
       let fallbackToken = null;
@@ -114,8 +105,6 @@ const LoginPage = () => {
         if (!localStorage.getItem('cybermedic_token')) {
           storeAuthSession(user, fallbackToken);
         }
-
->>>>>>> ea86c5974567c7543aab90b77e544e445977e2ee
         // 2. Create account (GCP Credentials) if provided
         if (credData.rawFileContent) {
           await createAccount({
@@ -125,12 +114,7 @@ const LoginPage = () => {
             accountDetails: credData.accountDetails
           });
         }
-<<<<<<< HEAD
-
-=======
-
         setPendingSignupUser(null);
->>>>>>> ea86c5974567c7543aab90b77e544e445977e2ee
         navigate('/dashboard');
       }
     } catch (err) {

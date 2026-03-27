@@ -1,8 +1,12 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001';
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
 export const AUTH_TOKEN_KEY = 'cybermedic_token';
 export const AUTH_USER_KEY = 'cybermedic_user';
+
+if (!API_BASE_URL) {
+  throw new Error('Missing VITE_BACKEND_URL in frontend .env file');
+}
 
 const api = axios.create({
   baseURL: API_BASE_URL,
