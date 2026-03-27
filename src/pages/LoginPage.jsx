@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  ShieldCheck, 
-  ArrowRight, 
-  Upload, 
-  User, 
-  Mail, 
-  Phone, 
+import {
+  ShieldCheck,
+  ArrowRight,
+  Upload,
+  User,
+  Mail,
+  Phone,
   Loader2,
   ChevronLeft,
   Cloud,
@@ -61,7 +61,7 @@ const LoginPage = () => {
           email: userData.email,
           password: userData.password
         });
-        
+
         if (res.data?.success) {
           localStorage.setItem('cybermedic_user', JSON.stringify(res.data.data));
           navigate('/dashboard');
@@ -85,10 +85,10 @@ const LoginPage = () => {
       // 1. Actually register the user now
       const regRes = await register(userData);
       const user = regRes.data?.data;
-      
+
       if (user) {
         localStorage.setItem('cybermedic_user', JSON.stringify(user));
-        
+
         // 2. Create account (GCP Credentials) if provided
         if (credData.rawFileContent) {
           await createAccount({
@@ -97,7 +97,7 @@ const LoginPage = () => {
             rawFileContent: credData.rawFileContent
           });
         }
-        
+
         navigate('/dashboard');
       }
     } catch (err) {
@@ -108,7 +108,7 @@ const LoginPage = () => {
     }
   };
 
-  const isStep1Valid = authMode === 'login' 
+  const isStep1Valid = authMode === 'login'
     ? (userData.email && userData.password)
     : (userData.name && userData.email && userData.password);
 
@@ -135,7 +135,7 @@ const LoginPage = () => {
             </div>
             <h1 className="login-brand-title">CyberMedic AI</h1>
             <p className="login-brand-subtitle">Self-Healing Infrastructure Platform</p>
-            
+
             <div className="login-brand-features">
               {[
                 'AI-powered incident response',
@@ -173,8 +173,8 @@ const LoginPage = () => {
                     {authMode === 'register' ? 'Create your account' : 'Welcome back'}
                   </h2>
                   <p className="login-form-desc">
-                    {authMode === 'register' 
-                      ? 'Tell us about yourself to personalize your experience.' 
+                    {authMode === 'register'
+                      ? 'Tell us about yourself to personalize your experience.'
                       : 'Sign in with your credentials to access your dashboard.'}
                   </p>
                 </div>
@@ -243,7 +243,7 @@ const LoginPage = () => {
 
                 {error && <div className="login-error">⚠ {error}</div>}
 
-                <button 
+                <button
                   onClick={handleAuth}
                   disabled={!isStep1Valid || isSubmitting}
                   className="login-btn-next"
@@ -289,7 +289,7 @@ const LoginPage = () => {
 
                   <div className="login-field">
                     <label className="login-label">Service Account Key (JSON)</label>
-                    <div 
+                    <div
                       onClick={() => document.getElementById('login-json-upload').click()}
                       className={`login-upload-zone ${credData.rawFileContent ? 'has-file' : ''}`}
                     >
@@ -306,12 +306,12 @@ const LoginPage = () => {
                           <p className="login-upload-hint">Supports .json service account keys</p>
                         </>
                       )}
-                      <input 
-                        id="login-json-upload" 
-                        type="file" 
-                        className="hidden" 
-                        accept=".json" 
-                        onChange={handleFileUpload} 
+                      <input
+                        id="login-json-upload"
+                        type="file"
+                        className="hidden"
+                        accept=".json"
+                        onChange={handleFileUpload}
                       />
                     </div>
                   </div>
@@ -334,7 +334,7 @@ const LoginPage = () => {
                   <button onClick={() => setStep(1)} className="login-btn-back">
                     <ChevronLeft className="w-4 h-4" /> Back
                   </button>
-                  <button 
+                  <button
                     onClick={handleFinalSubmit}
                     disabled={!isStep2Valid || isSubmitting}
                     className="login-btn-next"

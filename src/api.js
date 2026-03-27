@@ -19,15 +19,15 @@ export const healthCheck = () => api.get('/api/health');
 
 
 // --- Global GCP Discovery ---
-export const getGlobalGcpProjects = () => api.get('/api/gcp/global/projects');
-export const getGlobalGcpServices = (projectId, location) => {
-  const url = `/api/gcp/global/services?project_id=${projectId}${location ? `&location=${location}` : ''}`;
+export const getGlobalGcpProjects = (userId) => api.get(`/api/projects/${userId}`);
+export const getGlobalGcpServices = (userId, projectId, location) => {
+  const url = `/api/projects/${userId}/services?project_id=${projectId}${location ? `&location=${location}` : ''}`;
   return api.get(url);
 };
 
 // Aliases for backward compatibility with component imports
-export const getGcpProjects = (agentId) => getGlobalGcpProjects();
-export const getGcpServices = (agentId, projectId) => getGlobalGcpServices(projectId);
+export const getGcpProjects = (userId) => getGlobalGcpProjects(userId);
+export const getGcpServices = (userId, projectId, location) => getGlobalGcpServices(userId, projectId, location);
 
 // --- Auth & Users ---
 export const register = (data) => api.post('/api/auth/register', data);

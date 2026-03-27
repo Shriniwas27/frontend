@@ -130,13 +130,26 @@ const ConfigureServiceModal = ({ isOpen, onClose, theme, onSuccess, service }) =
   const fetchProjects = async (agentId, preselectedProject) => {
     setIsLoadingProjects(true);
     try {
-      const res = await getGcpProjects(agentId);
+      const userStr = localStorage.getItem('cybermedic_user');
+      const userId = userStr ? JSON.parse(userStr).id : null;
+      if (!userId) {
+        setIsLoadingProjects(false);
+        return;
+      }
+
+      const res = await getGcpProjects(userId);
       if (res.data?.success && res.data.data) {
-        setProjects(res.data.data.map(p => ({ label: p, value: p })));
+        const mapped = res.data.data.map(p => {
+          // Fallback if the backend actually returns strings, else use object properties
+          if (typeof p === 'string') return { label: p, value: p };
+          const label = p.display_name ? `${p.display_name} (${p.project_id})` : p.project_id;
+          return { label, value: p.project_id };
+        });
+        setProjects(mapped);
         
         // If they didn't have one predefined but we fetched exactly 1 project, select it
-        if (!preselectedProject && res.data.data.length === 1) {
-          updateField('gcpProject', res.data.data[0]);
+        if (!preselectedProject && mapped.length === 1) {
+          updateField('gcpProject', mapped[0].value);
         }
       }
     } catch (err) {
@@ -149,7 +162,14 @@ const ConfigureServiceModal = ({ isOpen, onClose, theme, onSuccess, service }) =
   const fetchCloudServices = async (agentId, projectId) => {
     setIsLoadingServices(true);
     try {
-      const res = await getGcpServices(agentId, projectId);
+      const userStr = localStorage.getItem('cybermedic_user');
+      const userId = userStr ? JSON.parse(userStr).id : null;
+      if (!userId) {
+        setIsLoadingServices(false);
+        return;
+      }
+
+      const res = await getGcpServices(userId, projectId);
       if (res.data?.success && res.data.data) {
         setCloudServices(res.data.data.map(s => ({ label: s, value: s })));
       }

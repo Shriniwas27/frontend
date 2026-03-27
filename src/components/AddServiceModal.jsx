@@ -133,7 +133,14 @@ const AddServiceModal = ({ isOpen, onClose, theme, onSuccess }) => {
   const fetchProjects = async () => {
     setIsLoadingProjects(true);
     try {
-      const res = await getGlobalGcpProjects();
+      const userStr = localStorage.getItem('cybermedic_user');
+      const userId = userStr ? JSON.parse(userStr).id : null;
+      if (!userId) {
+        setIsLoadingProjects(false);
+        return;
+      }
+      
+      const res = await getGlobalGcpProjects(userId);
       if (res.data?.success && res.data.data) {
         // API returns [{project_id, display_name, state}, ...]
         const mapped = res.data.data.map(p => ({
@@ -155,7 +162,14 @@ const AddServiceModal = ({ isOpen, onClose, theme, onSuccess }) => {
   const fetchCloudServices = async (projectId, location) => {
     setIsLoadingServices(true);
     try {
-      const res = await getGlobalGcpServices(projectId, location);
+      const userStr = localStorage.getItem('cybermedic_user');
+      const userId = userStr ? JSON.parse(userStr).id : null;
+      if (!userId) {
+        setIsLoadingServices(false);
+        return;
+      }
+
+      const res = await getGlobalGcpServices(userId, projectId, location);
       if (res.data?.success && res.data.data) {
         // API returns array of service name objects: [{name: "projects/.../services/svc", uri: "..."}]
         const mapped = res.data.data.map(s => {

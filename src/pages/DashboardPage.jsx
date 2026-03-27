@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Plus, 
+import {
+  Plus,
   Terminal,
   Cpu,
   CheckCircle2,
@@ -75,11 +75,11 @@ export default function DashboardPage() {
   useEffect(() => {
     document.documentElement.classList.remove('dark', 'light');
     document.documentElement.classList.add('light');
-    
+
     // Load user
     const storedUser = localStorage.getItem('cybermedic_user');
     if (storedUser) {
-      try { setCurrentUser(JSON.parse(storedUser)); } catch {}
+      try { setCurrentUser(JSON.parse(storedUser)); } catch { }
     }
 
     fetchServices();
@@ -150,30 +150,30 @@ export default function DashboardPage() {
   // Filtered & searched services
   const filteredServices = useMemo(() => {
     let result = services;
-    
+
     // Status filter
     if (serviceFilter === 'ISSUES') {
       result = result.filter(s => s.status === 'Degraded' || s.status === 'Down');
     } else if (serviceFilter === 'Operational') {
       result = result.filter(s => s.status === 'Operational');
     }
-    
+
     // Project filter
     if (projectFilter !== 'ALL') {
       result = result.filter(s => s.gcpProject === projectFilter);
     }
-    
+
     // Search
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      result = result.filter(s => 
+      result = result.filter(s =>
         s.microserviceName?.toLowerCase().includes(q) ||
         s.agentName?.toLowerCase().includes(q) ||
         s.gcpProject?.toLowerCase().includes(q) ||
         s.agentId?.toLowerCase().includes(q)
       );
     }
-    
+
     return result;
   }, [services, serviceFilter, projectFilter, searchQuery]);
 
@@ -220,12 +220,12 @@ export default function DashboardPage() {
 
   return (
     <div className={`flex h-screen transition-colors duration-300 ${isDark ? 'bg-dark-bg' : 'bg-gray-50'} font-sans selection:bg-google-blue/20 selection:text-google-blue overflow-hidden`}>
-      
+
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
-      <Sidebar 
-        activeTab={activeTab} 
-        setActiveTab={setActiveTab} 
+      <Sidebar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
         theme={theme}
         currentUser={currentUser}
         groups={groups}
@@ -234,36 +234,34 @@ export default function DashboardPage() {
       />
 
       <main className="flex-1 flex flex-col overflow-hidden">
-        
-        <TopHeader 
-          isDark={isDark} 
-          theme={theme} 
+
+        <TopHeader
+          isDark={isDark}
+          theme={theme}
           toggleTheme={toggleTheme}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
         />
 
         <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
-          
+
           <div className="flex justify-between items-end mb-8">
             <div className="animate-in fade-in slide-in-from-left-4">
               <h2 className={`text-3xl font-bold tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>{activeTab}</h2>
               <p className={isDark ? 'text-gray-500' : 'text-gray-600'}>Real-time observability and self-healing orchestration.</p>
             </div>
             <div className="flex items-center gap-3">
-              <button 
+              <button
                 onClick={() => setIsGroupManagerOpen(true)}
-                className={`px-4 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 transition-all border ${
-                  isDark ? 'border-dark-border text-gray-400 hover:text-white hover:border-gray-500' : 'border-gray-200 text-gray-600 hover:text-gray-900 hover:border-gray-300 bg-white'
-                }`}
+                className={`px-4 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 transition-all border ${isDark ? 'border-dark-border text-gray-400 hover:text-white hover:border-gray-500' : 'border-gray-200 text-gray-600 hover:text-gray-900 hover:border-gray-300 bg-white'
+                  }`}
               >
                 <FolderOpen className="w-4 h-4" /> Manage Groups
               </button>
-              <button 
+              <button
                 onClick={() => setIsModalOpen(true)}
-                className={`px-6 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 hover:scale-105 transition-all shadow-lg ${
-                  isDark ? 'bg-emerald-accent text-dark-bg shadow-emerald-accent/20' : 'bg-google-blue text-white shadow-google-blue/20'
-                }`}
+                className={`px-6 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 hover:scale-105 transition-all shadow-lg ${isDark ? 'bg-emerald-accent text-dark-bg shadow-emerald-accent/20' : 'bg-google-blue text-white shadow-google-blue/20'
+                  }`}
               >
                 <Plus className="w-5 h-5" /> NEW SERVICE
               </button>
@@ -281,25 +279,22 @@ export default function DashboardPage() {
           {/* Recent Services */}
           {recentServices.length > 0 && (
             <div className="mb-10">
-              <h3 className={`text-sm font-bold uppercase tracking-widest mb-4 ${isDark ? 'text-gray-400': 'text-gray-500'}`}>
+              <h3 className={`text-sm font-bold uppercase tracking-widest mb-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                 Recently Added
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {recentServices.map((service, idx) => (
-                  <div key={service.id} className={`p-4 rounded-xl border flex items-center gap-4 transition-all hover:shadow-md ${
-                    isDark ? 'bg-dark-card border-dark-border hover:border-gray-600' : 'bg-white border-gray-200 hover:border-google-blue/30'
-                  }`}>
-                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                      service.status === 'Operational' ? 'bg-emerald-accent' : service.status === 'Degraded' ? 'bg-amber-400' : 'bg-rose-accent'
-                    }`}></div>
+                  <div key={service.id} className={`p-4 rounded-xl border flex items-center gap-4 transition-all hover:shadow-md ${isDark ? 'bg-dark-card border-dark-border hover:border-gray-600' : 'bg-white border-gray-200 hover:border-google-blue/30'
+                    }`}>
+                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${service.status === 'Operational' ? 'bg-emerald-accent' : service.status === 'Degraded' ? 'bg-amber-400' : 'bg-rose-accent'
+                      }`}></div>
                     <div className="min-w-0 flex-1">
                       <p className={`text-sm font-semibold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{service.microserviceName}</p>
                       <p className="text-xs text-gray-500">{service.gcpProject || 'No Project'} · {service.agentName}</p>
                     </div>
-                    <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${
-                      service.status === 'Operational' ? 'bg-emerald-accent/10 text-emerald-500' : 
-                      service.status === 'Degraded' ? 'bg-amber-400/10 text-amber-500' : 'bg-rose-accent/10 text-rose-500'
-                    }`}>{service.status}</span>
+                    <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${service.status === 'Operational' ? 'bg-emerald-accent/10 text-emerald-500' :
+                        service.status === 'Degraded' ? 'bg-amber-400/10 text-amber-500' : 'bg-rose-accent/10 text-rose-500'
+                      }`}>{service.status}</span>
                   </div>
                 ))}
               </div>
@@ -312,16 +307,15 @@ export default function DashboardPage() {
               <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Active Microservices</h3>
               <div className="flex gap-2 flex-wrap">
                 {['ALL', 'Operational', 'ISSUES'].map(f => (
-                  <button 
+                  <button
                     key={f}
                     onClick={() => setServiceFilter(f)}
-                    className={`px-4 py-1.5 rounded-full text-[10px] font-bold transition-all border ${
-                      serviceFilter === f 
-                        ? (f === 'ISSUES' 
+                    className={`px-4 py-1.5 rounded-full text-[10px] font-bold transition-all border ${serviceFilter === f
+                        ? (f === 'ISSUES'
                           ? (isDark ? 'bg-rose-accent text-white border-rose-accent shadow-md shadow-rose-accent/20' : 'bg-rose-600 text-white border-rose-600 shadow-md shadow-rose-600/20')
                           : (isDark ? 'bg-emerald-accent text-dark-bg border-emerald-accent' : 'bg-google-blue text-white border-google-blue'))
                         : (isDark ? 'bg-gray-900 border-dark-border text-gray-500 hover:text-white' : 'bg-white border-gray-200 text-gray-500 hover:text-gray-900')
-                    }`}
+                      }`}
                   >{f}</button>
                 ))}
               </div>
@@ -330,11 +324,10 @@ export default function DashboardPage() {
                   <select
                     value={projectFilter}
                     onChange={(e) => setProjectFilter(e.target.value)}
-                    className={`pl-3 pr-8 py-1.5 rounded-full text-[10px] font-bold border appearance-none cursor-pointer transition-all ${
-                      projectFilter !== 'ALL'
+                    className={`pl-3 pr-8 py-1.5 rounded-full text-[10px] font-bold border appearance-none cursor-pointer transition-all ${projectFilter !== 'ALL'
                         ? (isDark ? 'bg-google-blue/20 border-google-blue text-google-blue' : 'bg-google-blue/10 border-google-blue text-google-blue')
                         : (isDark ? 'bg-gray-900 border-dark-border text-gray-500' : 'bg-white border-gray-200 text-gray-500')
-                    }`}
+                      }`}
                   >
                     <option value="ALL">All Projects</option>
                     {uniqueProjects.map(p => (
@@ -347,14 +340,14 @@ export default function DashboardPage() {
             </div>
 
             <div className="flex items-center gap-2">
-              <button 
+              <button
                 onClick={() => setViewMode('flat')}
                 className={`p-2 rounded-lg transition-all ${viewMode === 'flat' ? (isDark ? 'bg-gray-800 text-white' : 'bg-gray-200 text-gray-900') : 'text-gray-400 hover:text-gray-600'}`}
                 title="Flat View"
               >
                 <Grid3X3 className="w-4 h-4" />
               </button>
-              <button 
+              <button
                 onClick={() => setViewMode('grouped')}
                 className={`p-2 rounded-lg transition-all ${viewMode === 'grouped' ? (isDark ? 'bg-gray-800 text-white' : 'bg-gray-200 text-gray-900') : 'text-gray-400 hover:text-gray-600'}`}
                 title="Grouped View"
@@ -390,17 +383,15 @@ export default function DashboardPage() {
               {groups.length > 0 ? (
                 // Custom groups view
                 Object.entries(customGroupedServices).map(([key, group]) => (
-                  <div key={key} className={`rounded-2xl border-2 border-dashed p-6 transition-all ${
-                    isDark ? 'border-gray-700 bg-gray-900/30' : 'bg-white/50'
-                  }`} style={{ borderColor: group.color || '#dadce0' }}>
+                  <div key={key} className={`rounded-2xl border-2 border-dashed p-6 transition-all ${isDark ? 'border-gray-700 bg-gray-900/30' : 'bg-white/50'
+                    }`} style={{ borderColor: group.color || '#dadce0' }}>
                     <div className="flex items-center gap-3 mb-4">
                       <div className="w-3 h-3 rounded-full" style={{ background: group.color || '#9ca3af' }}></div>
                       <h4 className={`text-sm font-bold uppercase tracking-wider ${isDark ? 'text-white' : 'text-gray-900'}`}>
                         {group.name}
                       </h4>
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${
-                        isDark ? 'bg-gray-800 text-gray-400' : 'bg-gray-100 text-gray-500'
-                      }`}>{group.type || 'group'}</span>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${isDark ? 'bg-gray-800 text-gray-400' : 'bg-gray-100 text-gray-500'
+                        }`}>{group.type || 'group'}</span>
                       <span className="text-xs text-gray-400">{group.services?.length || 0} services</span>
                     </div>
                     {group.services?.length > 0 ? (
@@ -417,17 +408,15 @@ export default function DashboardPage() {
               ) : (
                 // Default: group by GCP project
                 Object.entries(groupedByProject).map(([project, projectServices]) => (
-                  <div key={project} className={`rounded-2xl border-2 border-dashed p-6 transition-all ${
-                    isDark ? 'border-gray-700 bg-gray-900/30' : 'border-gray-200 bg-white/50'
-                  }`}>
+                  <div key={project} className={`rounded-2xl border-2 border-dashed p-6 transition-all ${isDark ? 'border-gray-700 bg-gray-900/30' : 'border-gray-200 bg-white/50'
+                    }`}>
                     <div className="flex items-center gap-3 mb-4">
                       <div className={`w-3 h-3 rounded-full ${isDark ? 'bg-google-blue' : 'bg-google-blue'}`}></div>
                       <h4 className={`text-sm font-bold uppercase tracking-wider ${isDark ? 'text-white' : 'text-gray-900'}`}>
                         {project}
                       </h4>
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${
-                        isDark ? 'bg-gray-800 text-gray-400' : 'bg-gray-100 text-gray-500'
-                      }`}>project</span>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${isDark ? 'bg-gray-800 text-gray-400' : 'bg-gray-100 text-gray-500'
+                        }`}>project</span>
                       <span className="text-xs text-gray-400">{projectServices.length} services</span>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -442,22 +431,21 @@ export default function DashboardPage() {
           )}
 
           {/* Live Event Stream */}
-          <div className={`border rounded-2xl p-6 transition-colors ${
-            isDark ? 'bg-dark-card border-dark-border' : 'bg-white border-gray-200 shadow-sm'
-          }`}>
+          <div className={`border rounded-2xl p-6 transition-colors ${isDark ? 'bg-dark-card border-dark-border' : 'bg-white border-gray-200 shadow-sm'
+            }`}>
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
                 <Terminal className={isDark ? 'text-emerald-accent' : 'text-google-blue'} />
                 <h3 className={`text-xs font-black uppercase tracking-widest ${isDark ? 'text-white' : 'text-gray-900'}`}>Live Event Stream</h3>
               </div>
-              <button 
+              <button
                 onClick={() => showToast('Log export started', 'success')}
                 className="text-[10px] font-bold text-gray-500 hover:text-emerald-accent transition-colors flex items-center gap-2"
               >
                 <Share2 className="w-3 h-3" /> EXPORT
               </button>
             </div>
-            
+
             <div className="space-y-4 font-mono text-xs">
               {logs.map((log) => (
                 <div key={log.id} className={`flex gap-4 p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-gray-800/30' : 'hover:bg-gray-50'}`}>
@@ -471,14 +459,14 @@ export default function DashboardPage() {
         </div>
       </main>
 
-      <AddServiceModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        theme={theme} 
+      <AddServiceModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        theme={theme}
         onSuccess={(msg) => {
           showToast(msg, 'success');
           fetchServices();
-        }} 
+        }}
       />
 
       <ConfigureServiceModal
