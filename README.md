@@ -1,5 +1,42 @@
 # Vantome Frontend (React + Vite)
+# Vantome: Self-Healing Autonomous Microservices System
+**Team:** Vantome | Nawaz Sayyad , Nirmal Ramchandani , Shriniwas Prachand , Prathmesh Joshi
 
+## 🎥 Demo & Live Access
+* **Final Demo Video (Guideline):** [Watch on Google Drive](https://drive.google.com/file/d/1lZRLXoZmB8PQtN2nonIdeqwO37NcyQQN/view?usp=sharing)
+* **Live Platform:** [vantome.adroitsdvc.in](https://vantome.adroitsdvc.in/)
+  * *(Note: Please do not reload the page if you are already logged in)*
+* **Test Credentials:**
+  * **Email:** `shared on whatsapp`
+  * **Password:** `shared on whatsapp` or DM us at 9422019956
+
+## 📸 System Screenshots
+
+### Agent Analysis
+![Agent Analysis](1.png)
+
+### Stress Test Simulator
+![Simulator](2.png)
+
+## ⚙️ Testing Guidelines & API Limits (Please Read)
+To test the self-healing capabilities, you can use our dedicated simulation microservice to monitor and intentionally crash the system.
+
+* **Stress Test UI:** [Vantome Simulator](https://vantome-stress-test-pro-978156456889.asia-south1.run.app/ui)
+
+**⚠️ Important API Constraints:**
+Because we are currently operating on a free-tier API, strict usage quotas apply:
+1. Please click **Crash ONLY 1 time**.
+2. Please click **Memory ONLY 2 times**.
+
+**What happens if the API is exhausted?**
+If you do not see any response in the UI after getting an error, it means the API key quota has been exhausted and the visual components will stop working. 
+
+**🎙️ Fallback Mechanism:**
+If the UI stops responding due to API limits, you can still use **Agent 2** for voice emails. The voice agent will continue to work perfectly even if the visual interface is exhausted.
+
+## 📂 Repositories & Setup Guide
+* **Frontend & Setup Guide:** [Shriniwas27/frontend README](https://github.com/Shriniwas27/frontend/blob/main/README.md)
+* **Backend Repository:** [scorpionawaz/backend-nirmal](https://github.com/scorpionawaz/backend-nirmal)
 ## 1. Project Overview
 
 Vantome frontend is the operations dashboard UI for monitoring services, viewing incidents, configuring agent behavior, and connecting to the assistant over realtime WebSocket sessions.
