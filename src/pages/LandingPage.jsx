@@ -73,7 +73,7 @@ const LandingPage = () => {
             <div className="landing-logo-icon">
               <ShieldCheck className="w-5 h-5 text-white" />
             </div>
-            <span className="landing-logo-text">CyberMedic <span className="text-google-blue">AI</span></span>
+            <span className="landing-logo-text">Vantome</span>
           </div>
           <div className="landing-nav-links">
             <a href="#features" className="landing-nav-link">Features</a>
@@ -143,7 +143,7 @@ const LandingPage = () => {
                 <span className="dot-yellow"></span>
                 <span className="dot-green"></span>
               </div>
-              <span className="landing-preview-title">CyberMedic Dashboard</span>
+              <span className="landing-preview-title">Vantome Dashboard</span>
             </div>
             <div className="landing-preview-body">
               <div className="landing-preview-sidebar">
@@ -245,9 +245,9 @@ const LandingPage = () => {
             <div className="landing-logo-icon small">
               <ShieldCheck className="w-4 h-4 text-white" />
             </div>
-            <span className="landing-logo-text small">CyberMedic <span className="text-google-blue">AI</span></span>
+            <span className="landing-logo-text small">Vantome</span>
           </div>
-          <p className="landing-footer-text">© 2026 CyberMedic AI. Built for resilient cloud infrastructure.</p>
+          <p className="landing-footer-text">© 2026 Vantome. Built for resilient cloud infrastructure.</p>
         </div>
       </footer>
     </div>

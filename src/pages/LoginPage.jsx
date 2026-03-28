@@ -150,7 +150,7 @@ const LoginPage = () => {
             <div className="login-brand-logo">
               <ShieldCheck className="w-8 h-8 text-white" />
             </div>
-            <h1 className="login-brand-title">CyberMedic AI</h1>
+            <h1 className="login-brand-title">Vantome</h1>
             <p className="login-brand-subtitle">Self-Healing Infrastructure Platform</p>
 
             <div className="login-brand-features">
@@ -276,7 +276,7 @@ const LoginPage = () => {
                   {authMode === 'register' ? (
                     <p>Already have an account? <button onClick={() => { clearAuthSession(); setAuthMode('login'); setError(null); }}>Sign In</button></p>
                   ) : (
-                    <p>New to CyberMedic? <button onClick={() => { clearAuthSession(); setAuthMode('register'); setError(null); }}>Create Account</button></p>
+                    <p>New to Vantome? <button onClick={() => { clearAuthSession(); setAuthMode('register'); setError(null); }}>Create Account</button></p>
                   )}
                 </div>
               </div>

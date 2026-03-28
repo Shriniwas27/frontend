@@ -4,6 +4,19 @@ const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
 export const AUTH_TOKEN_KEY = 'cybermedic_token';
 export const AUTH_USER_KEY = 'cybermedic_user';
 
+export const getApiBaseUrl = () => API_BASE_URL;
+
+export const getWebSocketBaseUrl = () => {
+  try {
+    const url = new URL(API_BASE_URL);
+    const wsProtocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+    return `${wsProtocol}//${url.host}`;
+  } catch {
+    // Fallback for malformed base URL values.
+    return API_BASE_URL.replace(/^https:/, 'wss:').replace(/^http:/, 'ws:');
+  }
+};
+
 if (!API_BASE_URL) {
   throw new Error('Missing VITE_BACKEND_URL in frontend .env file');
 }

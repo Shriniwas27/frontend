@@ -264,7 +264,7 @@ const AddServiceModal = ({ isOpen, onClose, theme, onSuccess }) => {
         </div>
 
         {/* Body */}
-        <div className="p-8 min-h-[370px] overflow-y-auto">
+        <div className="p-8 min-h-92.5 overflow-y-auto">
 
           {/* Step 1: Cloud Target (Replaced Credentials) */}
           {step === 1 && (
@@ -399,7 +399,7 @@ const AddServiceModal = ({ isOpen, onClose, theme, onSuccess }) => {
                           : (isDark ? 'bg-gray-900/50 border-dark-border hover:border-gray-600' : 'bg-gray-50 border-gray-200 hover:border-gray-300')
                       }`}
                     >
-                      <div className={`w-5 h-5 rounded flex items-center justify-center border-2 flex-shrink-0 transition-all ${
+                      <div className={`w-5 h-5 rounded flex items-center justify-center border-2 shrink-0 transition-all ${
                         formData.permissions[key]
                           ? (isDark ? 'bg-emerald-accent border-emerald-accent' : 'bg-google-blue border-google-blue')
                           : (isDark ? 'border-gray-600' : 'border-gray-300')
@@ -407,7 +407,7 @@ const AddServiceModal = ({ isOpen, onClose, theme, onSuccess }) => {
                         {formData.permissions[key] && <CheckCircle2 className="w-3 h-3 text-white" />}
                       </div>
                       <div className="flex items-center gap-3 flex-1">
-                        <Icon className={`w-4 h-4 flex-shrink-0 ${formData.permissions[key] ? (isDark ? 'text-emerald-accent' : 'text-google-blue') : 'text-gray-500'}`} />
+                        <Icon className={`w-4 h-4 shrink-0 ${formData.permissions[key] ? (isDark ? 'text-emerald-accent' : 'text-google-blue') : 'text-gray-500'}`} />
                         <div>
                           <p className={`text-sm font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{label}</p>
                           <p className="text-xs text-gray-500">{desc}</p>
@@ -487,7 +487,7 @@ const AddServiceModal = ({ isOpen, onClose, theme, onSuccess }) => {
                         type="email"
                         value={formData.email}
                         onChange={(e) => updateField('email', e.target.value)}
-                        placeholder="admin@cybermedic.ai"
+                        placeholder="admin@vantome.ai"
                         className={`w-full pl-10 border rounded-lg p-2.5 text-sm focus:outline-none transition-all ${
                           isDark ? 'bg-gray-900 border-dark-border text-white focus:border-emerald-accent' : 'bg-white border-gray-300 text-gray-900 focus:border-google-blue'
                         }`}

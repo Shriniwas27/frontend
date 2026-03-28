@@ -2,6 +2,11 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Activity, Bot, Clock3, Loader2, RefreshCw, Settings2, XCircle } from 'lucide-react';
 import { getAgentLogsStreamUrl, getAgentState } from '../api';
 
+const isErrorSeverity = (value) => {
+  const normalized = String(value || '').toLowerCase();
+  return normalized.includes('error') || normalized.includes('fatal') || normalized.includes('critical');
+};
+
 const InfoRow = ({ label, value, isDark }) => (
   <div className={`flex items-center justify-between py-2 border-b ${isDark ? 'border-gray-800' : 'border-gray-100'}`}>
     <span className={`text-xs font-bold uppercase tracking-wide ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{label}</span>
@@ -108,7 +113,7 @@ export default function AgentDetailsModal({ isOpen, onClose, onEditConfiguration
         const parsed = JSON.parse(event.data);
         const item = {
           time: parsed?.time || new Date().toISOString(),
-          severity: parsed?.severity || 'INFO',
+          severity: parsed?.severity || parsed?.type || parsed?.level || 'INFO',
           payload: parsed?.payload,
         };
 
@@ -189,14 +194,19 @@ export default function AgentDetailsModal({ isOpen, onClose, onEditConfiguration
 
               <div ref={logsViewportRef} className="flex-1 min-h-0 overflow-y-auto space-y-2 pr-1">
                 {displayedLogs.length > 0 ? (
-                  displayedLogs.map((entry, idx) => (
-                    <div key={idx} className={`p-3 rounded-lg border font-mono text-xs ${isDark ? 'bg-dark-card border-dark-border text-gray-300' : 'bg-white border-gray-200 text-gray-700'}`}>
-                      <div className="text-gray-500 mb-1">
+                  displayedLogs.map((entry, idx) => {
+                    const hasError = isErrorSeverity(entry?.severity);
+                    return (
+                    <div key={idx} className={`p-3 rounded-lg border font-mono text-xs ${hasError
+                        ? (isDark ? 'bg-rose-900/20 border-rose-500/40 text-rose-200' : 'bg-rose-50 border-rose-200 text-rose-700')
+                        : (isDark ? 'bg-dark-card border-dark-border text-gray-300' : 'bg-white border-gray-200 text-gray-700')}`}>
+                      <div className={`mb-1 ${hasError ? (isDark ? 'text-rose-300' : 'text-rose-600') : 'text-gray-500'}`}>
                         [{entry?.time || 'live'}] {entry?.severity ? `[${entry.severity}]` : ''}
                       </div>
                       <div>{typeof entry?.payload === 'string' ? entry.payload : JSON.stringify(entry?.payload)}</div>
                     </div>
-                  ))
+                    );
+                  })
                 ) : isLoadingState ? (
                   <div className={`text-xs p-3 rounded-lg border flex items-center gap-2 ${isDark ? 'bg-dark-card border-dark-border text-gray-500' : 'bg-white border-gray-200 text-gray-500'}`}>
                     <Loader2 className="w-4 h-4 animate-spin" /> Loading live logs...

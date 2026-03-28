@@ -26,12 +26,18 @@ import AddServiceModal from '../components/AddServiceModal';
 import ConfigureServiceModal from '../components/ConfigureServiceModal';
 import GroupManager from '../components/GroupManager';
 import Toast from '../components/Toast';
+import ChatbotWidget from '../components/ChatbotWidget';
 
 import { getServices, deleteService, updateServiceStatus, getGroups } from '../api';
 
 const getDisplayServiceName = (name) => {
   if (typeof name !== 'string') return name;
   return name.includes('/services/') ? name.split('/services/').pop() : name;
+};
+
+const isErrorLogType = (value) => {
+  const normalized = String(value || '').toLowerCase();
+  return normalized.includes('error') || normalized.includes('fatal') || normalized.includes('critical');
 };
 
 export default function DashboardPage() {
@@ -303,7 +309,7 @@ export default function DashboardPage() {
                 {recentServices.map((service, idx) => (
                   <div key={service.id} className={`p-4 rounded-xl border flex items-center gap-4 transition-all hover:shadow-md ${isDark ? 'bg-dark-card border-dark-border hover:border-gray-600' : 'bg-white border-gray-200 hover:border-google-blue/30'
                     }`}>
-                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${service.status === 'Operational' ? 'bg-emerald-accent' : service.status === 'Degraded' ? 'bg-amber-400' : 'bg-rose-accent'
+                    <div className={`w-2 h-2 rounded-full shrink-0 ${service.status === 'Operational' ? 'bg-emerald-accent' : service.status === 'Degraded' ? 'bg-amber-400' : 'bg-rose-accent'
                       }`}></div>
                     <div className="min-w-0 flex-1">
                       <p className={`text-sm font-semibold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{getDisplayServiceName(service.microserviceName)}</p>
@@ -465,13 +471,22 @@ export default function DashboardPage() {
 
             <div className="space-y-4 font-mono text-xs">
               {logs.length > 0 ? (
-                logs.map((log) => (
-                  <div key={log.id} className={`flex gap-4 p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-gray-800/30' : 'hover:bg-gray-50'}`}>
+                logs.map((log) => {
+                  const logType = log.type || log.severity || log.level || 'INFO';
+                  const hasError = isErrorLogType(logType);
+
+                  return (
+                  <div key={log.id} className={`flex gap-4 p-2 rounded-lg transition-colors ${hasError
+                      ? (isDark ? 'bg-rose-900/20 border border-rose-500/30' : 'bg-rose-50 border border-rose-200')
+                      : (isDark ? 'hover:bg-gray-800/30' : 'hover:bg-gray-50')}`}>
                     <span className="text-gray-500">[{log.time}]</span>
                     <span className={isDark ? 'text-emerald-accent' : 'text-google-blue'}>[{log.agent}]</span>
-                    <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>{log.action}</span>
+                    <span className={hasError ? (isDark ? 'text-rose-300' : 'text-rose-700') : (isDark ? 'text-gray-300' : 'text-gray-700')}>
+                      [{String(logType).toUpperCase()}] {log.action}
+                    </span>
                   </div>
-                ))
+                  );
+                })
               ) : (
                 <div className={`p-3 rounded-lg border text-xs ${isDark ? 'bg-gray-900/40 border-dark-border text-gray-500' : 'bg-gray-50 border-gray-200 text-gray-500'}`}>
                   No live logs yet.
@@ -511,6 +526,11 @@ export default function DashboardPage() {
         services={services}
         groups={groups}
         onGroupsChange={() => fetchGroups()}
+      />
+
+      <ChatbotWidget
+        scope={isAgentDetailsOpen && selectedService ? 'agent-details' : 'dashboard'}
+        agentId={isAgentDetailsOpen && selectedService ? (selectedService.agentId || selectedService.id) : null}
       />
     </div>
   );

@@ -37,7 +37,7 @@ const Sidebar = ({ activeTab, setActiveTab, theme, currentUser, groups, onLogout
             <ShieldCheck className={`w-6 h-6 ${isDark ? 'text-emerald-accent' : 'text-google-blue'}`} />
           </div>
           <div>
-            <h1 className={`text-lg font-bold tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>CyberMedic <span className={isDark ? 'text-emerald-accent' : 'text-google-blue'}>AI</span></h1>
+            <h1 className={`text-lg font-bold tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>Vantome</h1>
             <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Self-Healing Grid</p>
           </div>
         </div>
@@ -77,7 +77,7 @@ const Sidebar = ({ activeTab, setActiveTab, theme, currentUser, groups, onLogout
                   isDark ? 'text-gray-400' : 'text-gray-500'
                 }`}
               >
-                <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: g.color || '#9ca3af' }}></div>
+                <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: g.color || '#9ca3af' }}></div>
                 <span className="truncate text-xs font-medium">{g.name}</span>
                 <span className="text-[9px] text-gray-400 ml-auto">{g.serviceIds?.length || 0}</span>
               </div>
