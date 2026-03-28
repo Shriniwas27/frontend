@@ -2,7 +2,7 @@ import React from 'react';
 
 const MetricCard = ({ title, value, icon: Icon, color, theme }) => (
   <div className={`p-5 rounded-xl flex items-center justify-between border transition-all ${
-    theme === 'dark' ? 'bg-dark-card border-dark-border hover:border-gray-600' : 'bg-white border-gray-200 hover:border-google-blue/30 shadow-sm'
+    theme === 'dark' ? 'bg-dark-card border-dark-border hover:border-gray-600' : 'ui-card-soft ui-card-soft-hover'
   }`}>
     <div>
       <p className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'} text-sm font-medium`}>{title}</p>

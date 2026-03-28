@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&display=swap');
 @import "tailwindcss";
 
 @theme {
@@ -16,7 +17,7 @@
 
 :root {
   /* Default: Light Mode (GCP-inspired) */
-  --bg-main: #f8f9fa;
+  --bg-main: #f3f4f6;
   --bg-card: #ffffff;
   --bg-sidebar: #ffffff;
   --border-main: #dadce0;
@@ -40,7 +41,7 @@
 }
 
 :root.light {
-  --bg-main: #f8f9fa;
+  --bg-main: #f3f4f6;
   --bg-card: #ffffff;
   --bg-sidebar: #ffffff;
   --border-main: #dadce0;
@@ -57,7 +58,17 @@ body {
   background-color: var(--bg-main);
   color: var(--text-primary);
   transition: background-color 0.3s ease, color 0.3s ease;
-  font-family: 'Inter', 'Google Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: 'Google Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+html,
+body,
+#root,
+button,
+input,
+textarea,
+select {
+  font-family: 'Google Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 /* Hide all scrollbars globally while keeping scroll behavior intact. */
@@ -80,6 +91,83 @@ body {
 
 .agent-active {
   animation: agent-pulse 2s infinite;
+}
+
+@keyframes ui-fade-slide-up {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.99);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes ui-soft-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.95;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+}
+
+.ui-enter {
+  animation: ui-fade-slide-up 260ms ease-out;
+}
+
+.ui-soft-transition {
+  transition: background-color 220ms ease, border-color 220ms ease, color 220ms ease, transform 220ms ease, box-shadow 220ms ease;
+}
+
+.ui-symbol-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  display: inline-block;
+  animation: ui-soft-breathe 1.9s ease-in-out infinite;
+}
+
+.ui-quick-alert {
+  animation: ui-fade-slide-up 220ms ease-out;
+}
+
+@keyframes ui-suggestion-flash {
+  0%,
+  100% {
+    box-shadow: 0 6px 14px rgba(107, 114, 128, 0.14), 0 0 0 1px rgba(209, 213, 219, 0.55) inset;
+    border-color: rgba(209, 213, 219, 0.9);
+  }
+  50% {
+    box-shadow: 0 6px 14px rgba(107, 114, 128, 0.14), 0 0 0 1px rgba(209, 213, 219, 0.55) inset;
+    border-color: rgba(209, 213, 219, 0.9);
+  }
+}
+
+.ui-suggestion-flash {
+  animation: none;
+  box-shadow: 0 6px 14px rgba(107, 114, 128, 0.14), 0 0 0 1px rgba(209, 213, 219, 0.55) inset;
+  border-color: rgba(209, 213, 219, 0.9);
+}
+
+.ui-card-soft {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 8px 20px rgba(107, 114, 128, 0.12), 0 2px 6px rgba(17, 24, 39, 0.05);
+}
+
+.ui-card-soft-hover {
+  transition: box-shadow 220ms ease, transform 220ms ease, border-color 220ms ease;
+}
+
+.ui-card-soft-hover:hover {
+  box-shadow: 0 14px 28px rgba(107, 114, 128, 0.16), 0 4px 8px rgba(17, 24, 39, 0.08);
+  border-color: #d1d5db;
+  transform: translateY(-1px);
 }
 
 .custom-scrollbar::-webkit-scrollbar {

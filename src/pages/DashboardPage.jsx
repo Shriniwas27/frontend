@@ -228,7 +228,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className={`flex h-screen transition-colors duration-300 ${isDark ? 'bg-dark-bg' : 'bg-gray-50'} font-sans selection:bg-google-blue/20 selection:text-google-blue overflow-hidden`}>
+    <div className={`flex h-screen transition-colors duration-300 ${isDark ? 'bg-dark-bg' : 'bg-gray-100'} font-sans selection:bg-google-blue/20 selection:text-google-blue overflow-hidden`}>
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
@@ -309,7 +309,7 @@ export default function DashboardPage() {
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {recentServices.map((service, idx) => (
-                  <div key={service.id} className={`p-4 rounded-xl border flex items-center gap-4 transition-all hover:shadow-md ${isDark ? 'bg-dark-card border-dark-border hover:border-gray-600' : 'bg-white border-gray-200 hover:border-google-blue/30'
+                  <div key={service.id} className={`p-4 rounded-xl border flex items-center gap-4 transition-all hover:shadow-md ${isDark ? 'bg-dark-card border-dark-border hover:border-gray-600' : 'ui-card-soft ui-card-soft-hover'
                     }`}>
                     <div className={`w-2 h-2 rounded-full shrink-0 ${service.status === 'Operational' ? 'bg-emerald-accent' : service.status === 'Degraded' ? 'bg-amber-400' : 'bg-rose-accent'
                       }`}></div>
@@ -408,7 +408,7 @@ export default function DashboardPage() {
               {groups.length > 0 ? (
                 // Custom groups view
                 Object.entries(customGroupedServices).map(([key, group]) => (
-                  <div key={key} className={`rounded-2xl border-2 border-dashed p-6 transition-all ${isDark ? 'border-gray-700 bg-gray-900/30' : 'bg-white/50'
+                  <div key={key} className={`rounded-2xl border-2 border-dashed p-6 transition-all ${isDark ? 'border-gray-700 bg-gray-900/30' : 'ui-card-soft'
                     }`} style={{ borderColor: group.color || '#dadce0' }}>
                     <div className="flex items-center gap-3 mb-4">
                       <div className="w-3 h-3 rounded-full" style={{ background: group.color || '#9ca3af' }}></div>
@@ -433,7 +433,7 @@ export default function DashboardPage() {
               ) : (
                 // Default: group by GCP project
                 Object.entries(groupedByProject).map(([project, projectServices]) => (
-                  <div key={project} className={`rounded-2xl border-2 border-dashed p-6 transition-all ${isDark ? 'border-gray-700 bg-gray-900/30' : 'border-gray-200 bg-white/50'
+                  <div key={project} className={`rounded-2xl border-2 border-dashed p-6 transition-all ${isDark ? 'border-gray-700 bg-gray-900/30' : 'ui-card-soft'
                     }`}>
                     <div className="flex items-center gap-3 mb-4">
                       <div className={`w-3 h-3 rounded-full ${isDark ? 'bg-google-blue' : 'bg-google-blue'}`}></div>
@@ -456,7 +456,7 @@ export default function DashboardPage() {
           )}
 
           {/* Live Event Stream */}
-          <div className={`border rounded-2xl p-6 transition-colors ${isDark ? 'bg-dark-card border-dark-border' : 'bg-white border-gray-200 shadow-sm'
+          <div className={`border rounded-2xl p-6 transition-colors ${isDark ? 'bg-dark-card border-dark-border' : 'ui-card-soft'
             }`}>
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">

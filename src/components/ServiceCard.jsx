@@ -23,7 +23,7 @@ const ServiceCard = ({
   
   return (
     <div className={`border rounded-xl p-5 transition-all flex flex-col gap-4 relative overflow-hidden group ${
-      theme === 'dark' ? 'bg-dark-card border-dark-border hover:border-gray-600' : 'bg-white border-gray-200 hover:border-google-blue/30 shadow-sm'
+      theme === 'dark' ? 'bg-dark-card border-dark-border hover:border-gray-600' : 'ui-card-soft ui-card-soft-hover'
     }`}>
       <div className={`absolute top-0 right-0 p-1 px-3 text-[10px] font-bold uppercase tracking-wider rounded-bl-lg transition-colors ${
         isOperational ? 'bg-emerald-accent/20 text-emerald-accent' : 

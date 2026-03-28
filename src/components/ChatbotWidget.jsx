@@ -84,7 +84,7 @@ export default function ChatbotWidget({ scope = 'dashboard', agentId = null, the
       streamInterval.current = null;
     }
 
-    if (webSocket.current?.readyState === WebSocket.OPEN) {
+    if (webSocket.current && webSocket.current.readyState < WebSocket.CLOSING) {
       webSocket.current.close();
     }
 

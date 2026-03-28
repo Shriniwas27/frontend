@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Activity,
   AlertTriangle,
@@ -11,6 +11,7 @@ import {
   Info,
   Loader2,
   RefreshCw,
+  Sparkles,
   Settings2,
   XCircle,
 } from 'lucide-react';
@@ -26,11 +27,29 @@ const isNotificationSeverity = (value) => {
   return normalized.includes('notification') || normalized.includes('notify');
 };
 
+const isAnalysisSuggestionEntry = (entry) => {
+  const severity = String(entry?.severity || '').toLowerCase();
+  const eventType = String(entry?.eventType || '').toLowerCase();
+  return severity.includes('analysis') || eventType === 'analysisandsuggestion';
+};
+
 const getDisplaySeverityLabel = (entry) => {
+  if (isAnalysisSuggestionEntry(entry)) {
+    return 'ANALYSIS_SUGGESTION';
+  }
   if (isNotificationSeverity(entry?.severity) || entry?.eventType === 'notification') {
     return 'NOTIFICATION';
   }
   return String(entry?.severity || 'INFO').toUpperCase();
+};
+
+const formatPayloadForDisplay = (payload) => {
+  if (typeof payload === 'string') return payload;
+  try {
+    return JSON.stringify(payload);
+  } catch {
+    return String(payload ?? '');
+  }
 };
 
 const ShimmerLines = ({ isDark, lineCount = 3 }) => (
@@ -89,10 +108,13 @@ export default function AgentDetailsModal({ isOpen, onClose, onEditConfiguration
   const [secondsSinceUpdate, setSecondsSinceUpdate] = useState(null);
   const [notificationCount, setNotificationCount] = useState(0);
   const [copiedLogKey, setCopiedLogKey] = useState(null);
+  const [quickAlert, setQuickAlert] = useState(null);
   const isFetchingStateRef = useRef(false);
   const logsViewportRef = useRef(null);
   const incidentLogsViewportRef = useRef(null);
   const copyTimerRef = useRef(null);
+  const quickAlertTimerRef = useRef(null);
+  const lastAlertRef = useRef({ kind: null, at: 0 });
 
   const agentLookupId = service?.agentId || service?.id;
 
@@ -136,6 +158,63 @@ export default function AgentDetailsModal({ isOpen, onClose, onEditConfiguration
     }
   };
 
+  const playSuggestionTone = useCallback(() => {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+
+      const ctx = new AudioCtx();
+      const now = ctx.currentTime;
+
+      const playNote = (freq, startAt, duration, gainValue) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, startAt);
+        gain.gain.setValueAtTime(0, startAt);
+        gain.gain.linearRampToValueAtTime(gainValue, startAt + 0.02);
+        gain.gain.linearRampToValueAtTime(0, startAt + duration);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(startAt);
+        osc.stop(startAt + duration + 0.02);
+      };
+
+      playNote(880, now, 0.18, 0.18);
+      playNote(1175, now + 0.14, 0.2, 0.16);
+
+      window.setTimeout(() => {
+        ctx.close().catch(() => {});
+      }, 700);
+    } catch {
+      // Ignore browser autoplay and audio context errors.
+    }
+  }, []);
+
+  const showQuickAlert = useCallback((kind) => {
+    const now = Date.now();
+    if (lastAlertRef.current.kind === kind && now - lastAlertRef.current.at < 1800) {
+      return;
+    }
+
+    lastAlertRef.current = { kind, at: now };
+    const nextAlert = {
+      id: now,
+      kind,
+      text: kind === 'error' ? 'Error detected' : 'Suggestion received',
+    };
+    setQuickAlert(nextAlert);
+
+    if (quickAlertTimerRef.current) {
+      window.clearTimeout(quickAlertTimerRef.current);
+    }
+    quickAlertTimerRef.current = window.setTimeout(() => {
+      setQuickAlert((prev) => (prev?.id === nextAlert.id ? null : prev));
+    }, 2200);
+  }, []);
+
   useEffect(() => {
     if (!isOpen || !agentLookupId) return;
 
@@ -154,7 +233,15 @@ export default function AgentDetailsModal({ isOpen, onClose, onEditConfiguration
     setNotificationCount(0);
 
     const streamUrl = getAgentLogsStreamUrl(agentLookupId, false);
-    const eventSource = new EventSource(streamUrl);
+    let eventSource;
+    try {
+      eventSource = new EventSource(streamUrl);
+    } catch {
+      setStreamError('Live stream unavailable. Please retry.');
+      setIsConnectingStream(false);
+      setHasInitializedStream(true);
+      return undefined;
+    }
 
     const appendLogEntry = (item) => {
       setLiveLogs((prev) => {
@@ -180,7 +267,11 @@ export default function AgentDetailsModal({ isOpen, onClose, onEditConfiguration
 
     eventSource.addEventListener('log', (event) => {
       try {
-        appendLogEntry(parseLogEvent(event.data));
+        const parsedLog = parseLogEvent(event.data);
+        appendLogEntry(parsedLog);
+        if (isErrorSeverity(parsedLog?.severity)) {
+          showQuickAlert('error');
+        }
         setIsConnectingStream(false);
         setHasInitializedStream(true);
       } catch {
@@ -191,19 +282,26 @@ export default function AgentDetailsModal({ isOpen, onClose, onEditConfiguration
     eventSource.addEventListener('notification', (event) => {
       try {
         const parsed = JSON.parse(event.data);
+        const eventType = String(parsed?.event || '').toLowerCase();
         const level = String(parsed?.level || 'error').toUpperCase();
         const title = parsed?.title || 'Agent Notification';
         const message = parsed?.message || 'A notification event was received.';
+        const analysisText = parsed?.analysis || parsed?.suggestion || parsed?.details;
+        const isAnalysisEvent = eventType === 'analysisandsuggestion';
         const notificationEntry = {
           time: parsed?.time || new Date().toISOString(),
-          severity: 'NOTIFICATION',
-          eventType: 'notification',
+          severity: isAnalysisEvent ? 'ANALYSIS_SUGGESTION' : 'NOTIFICATION',
+          eventType: isAnalysisEvent ? 'analysisandsuggestion' : 'notification',
           level,
-          payload: `${title}: ${message}`,
+          payload: isAnalysisEvent ? analysisText || 'No analysis provided.' : `${title}: ${message}`,
         };
 
         appendLogEntry(notificationEntry);
         setNotificationCount((prev) => prev + 1);
+        if (isAnalysisEvent) {
+          playSuggestionTone();
+          showQuickAlert('suggestion');
+        }
         if (typeof onNotification === 'function') {
           onNotification({ ...parsed, title, message, level });
         }
@@ -217,7 +315,11 @@ export default function AgentDetailsModal({ isOpen, onClose, onEditConfiguration
     eventSource.onmessage = (event) => {
       try {
         // Backward-compatible fallback for unnamed SSE events.
-        appendLogEntry(parseLogEvent(event.data));
+        const fallbackLog = parseLogEvent(event.data);
+        appendLogEntry(fallbackLog);
+        if (isErrorSeverity(fallbackLog?.severity)) {
+          showQuickAlert('error');
+        }
         setIsConnectingStream(false);
         setHasInitializedStream(true);
       } catch {
@@ -233,11 +335,14 @@ export default function AgentDetailsModal({ isOpen, onClose, onEditConfiguration
     return () => {
       eventSource.close();
     };
-  }, [isOpen, agentLookupId, onNotification]);
+  }, [isOpen, agentLookupId, onNotification, playSuggestionTone, showQuickAlert]);
 
   useEffect(() => () => {
     if (copyTimerRef.current) {
       window.clearTimeout(copyTimerRef.current);
+    }
+    if (quickAlertTimerRef.current) {
+      window.clearTimeout(quickAlertTimerRef.current);
     }
   }, []);
 
@@ -261,12 +366,14 @@ export default function AgentDetailsModal({ isOpen, onClose, onEditConfiguration
   }, [lastStateUpdatedAt]);
 
   const displayedLogs = useMemo(
-    () => liveLogs.filter((entry) => !isNotificationSeverity(entry?.severity)),
+    () => liveLogs.filter((entry) => !isNotificationSeverity(entry?.severity) && !isAnalysisSuggestionEntry(entry)),
     [liveLogs],
   );
 
   const incidentLogs = useMemo(
-    () => liveLogs.filter((entry) => isErrorSeverity(entry?.severity) || isNotificationSeverity(entry?.severity)),
+    () => liveLogs.filter(
+      (entry) => isErrorSeverity(entry?.severity) || isNotificationSeverity(entry?.severity) || isAnalysisSuggestionEntry(entry),
+    ),
     [liveLogs],
   );
 
@@ -327,7 +434,16 @@ export default function AgentDetailsModal({ isOpen, onClose, onEditConfiguration
   if (!isOpen || !service) return null;
 
   return (
-    <div className={`w-full h-full rounded-2xl border overflow-hidden flex flex-col ${isDark ? 'bg-dark-card border-dark-border' : 'bg-white border-gray-200'}`}>
+    <div className={`relative w-full h-full rounded-2xl border overflow-hidden flex flex-col ui-enter ui-soft-transition ${isDark ? 'bg-dark-card border-dark-border' : 'bg-white border-gray-200'}`}>
+        {quickAlert && (
+          <div className="fixed top-5 right-5 z-50 pointer-events-none">
+            <div className={`ui-quick-alert px-3 py-2 rounded-lg border shadow-lg text-xs font-semibold backdrop-blur-sm ${quickAlert.kind === 'error'
+              ? (isDark ? 'bg-rose-950/85 border-rose-500/40 text-rose-200' : 'bg-rose-50 border-rose-200 text-rose-700')
+              : (isDark ? 'bg-violet-950/85 border-violet-500/40 text-violet-200' : 'bg-violet-50 border-violet-200 text-violet-700')}`}>
+              {quickAlert.text}
+            </div>
+          </div>
+        )}
         <div className={`px-6 py-4 border-b flex items-center justify-between ${isDark ? 'border-dark-border bg-gray-900/40' : 'border-gray-200 bg-gray-50'}`}>
           <div>
             <h2 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Agent Detailed View</h2>
@@ -355,9 +471,10 @@ export default function AgentDetailsModal({ isOpen, onClose, onEditConfiguration
           <div className="h-full flex flex-col lg:flex-row">
             <div className={`w-full lg:w-2/3 border-r ${isDark ? 'border-dark-border bg-gray-900/20' : 'border-gray-200 bg-gray-50/60'}`}>
               <div className="h-full flex flex-col xl:flex-row">
-                <div className={`w-full xl:w-2/5 border-b xl:border-b-0 xl:border-r p-5 flex flex-col ${isDark ? 'border-dark-border bg-gray-900/30' : 'border-gray-200 bg-gray-50'}`}>
+                <div className={`w-full xl:w-2/5 border-b xl:border-b-0 xl:border-r p-5 flex flex-col ui-soft-transition ${isDark ? 'border-dark-border bg-gray-900/30' : 'border-gray-200 bg-gray-50'}`}>
               <div className="flex items-center gap-2 mb-4">
                 <Activity className={`w-5 h-5 ${isDark ? 'text-emerald-accent' : 'text-google-blue'}`} />
+                <span className={`ui-symbol-dot ${isDark ? 'bg-emerald-400' : 'bg-google-blue'}`} />
                 <h3 className={`text-sm font-black uppercase tracking-wider ${isDark ? 'text-white' : 'text-gray-900'}`}>Current Live Logs</h3>
               </div>
 
@@ -375,7 +492,7 @@ export default function AgentDetailsModal({ isOpen, onClose, onEditConfiguration
                     const SeverityIcon = hasError ? AlertTriangle : isNotification ? BellRing : Info;
                     const logKey = `live-${idx}`;
                     return (
-                    <div key={idx} className={`group relative p-3 rounded-lg border font-mono text-xs ${hasError
+                    <div key={idx} className={`group relative p-3 rounded-lg border font-mono text-xs ui-soft-transition ${hasError
                         ? (isDark ? 'bg-rose-900/20 border-rose-500/40 text-rose-200' : 'bg-rose-50 border-rose-200 text-rose-700')
                         : (isDark ? 'bg-dark-card border-dark-border text-gray-300' : 'bg-white border-gray-200 text-gray-700')}`}>
                       <button
@@ -395,7 +512,7 @@ export default function AgentDetailsModal({ isOpen, onClose, onEditConfiguration
                         <SeverityIcon className="w-3.5 h-3.5" />
                         <span>[{entry?.time || 'live'}] [{getDisplaySeverityLabel(entry)}]</span>
                       </div>
-                      <div>{typeof entry?.payload === 'string' ? entry.payload : JSON.stringify(entry?.payload)}</div>
+                      <div>{formatPayloadForDisplay(entry?.payload)}</div>
                     </div>
                     );
                   })
@@ -413,6 +530,7 @@ export default function AgentDetailsModal({ isOpen, onClose, onEditConfiguration
               <div>
                 <div className="flex items-center gap-2 mb-3">
                   <Bot className={`w-5 h-5 ${isDark ? 'text-emerald-accent' : 'text-google-blue'}`} />
+                  <span className={`ui-symbol-dot ${isDark ? 'bg-emerald-400' : 'bg-google-blue'}`} />
                   <h3 className={`text-sm font-black uppercase tracking-wider ${isDark ? 'text-white' : 'text-gray-900'}`}>Live Agent State</h3>
                   {agentHealth && agentHealth.label !== 'Unknown' && agentHealth.label !== 'Degraded' && (
                     <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-bold ${agentHealth.className}`}>
@@ -474,6 +592,7 @@ export default function AgentDetailsModal({ isOpen, onClose, onEditConfiguration
               <div>
                 <div className="flex items-center gap-2 mb-3">
                   <Clock3 className={`w-5 h-5 ${isDark ? 'text-emerald-accent' : 'text-google-blue'}`} />
+                  <span className={`ui-symbol-dot ${isDark ? 'bg-emerald-400' : 'bg-google-blue'}`} />
                   <h3 className={`text-sm font-black uppercase tracking-wider ${isDark ? 'text-white' : 'text-gray-900'}`}>Agent Configuration (View Only)</h3>
                 </div>
 
@@ -519,6 +638,7 @@ export default function AgentDetailsModal({ isOpen, onClose, onEditConfiguration
                     <span className="animate-ping absolute h-full w-full rounded-full bg-emerald-400 opacity-70" />
                     <span className="relative rounded-full h-2.5 w-2.5 bg-emerald-500" />
                   </span>
+                  <span className={`ui-symbol-dot ${isDark ? 'bg-violet-400' : 'bg-violet-500'}`} />
                   <h3 className={`text-sm font-black uppercase tracking-wider ${isDark ? 'text-white' : 'text-gray-900'}`}>Agent Analysis Terminal</h3>
                 </div>
                 <div className="flex items-center gap-2">
@@ -543,12 +663,15 @@ export default function AgentDetailsModal({ isOpen, onClose, onEditConfiguration
                   incidentLogs.map((entry, idx) => {
                     const isError = isErrorSeverity(entry?.severity);
                     const isNotification = isNotificationSeverity(entry?.severity);
-                    const SeverityIcon = isError ? AlertTriangle : isNotification ? BellRing : Info;
+                    const isAnalysis = isAnalysisSuggestionEntry(entry);
+                    const SeverityIcon = isError ? AlertTriangle : isAnalysis ? Sparkles : isNotification ? BellRing : Info;
                     const logKey = `incident-${idx}`;
                     return (
-                      <div key={`incident-${idx}`} className={`group relative border-l-2 pl-3 pr-16 py-2 rounded-r transition-all hover:translate-x-1 ${isError
+                      <div key={`incident-${idx}`} className={`group relative border-l-2 pl-3 pr-16 py-2 rounded-r ui-soft-transition hover:translate-x-1 ${isError
                         ? (isDark ? 'border-rose-400 bg-rose-950/30' : 'border-rose-400 bg-rose-50')
-                        : (isDark ? 'border-sky-400 bg-sky-950/20' : 'border-sky-400 bg-sky-50')}`}>
+                        : isAnalysis
+                        ? (isDark ? 'border-violet-400 bg-violet-950/20' : 'border-violet-400 bg-violet-50')
+                        : (isDark ? 'border-sky-400 bg-sky-950/20' : 'border-sky-400 bg-sky-50')} ${isAnalysis ? 'ui-suggestion-flash' : ''}`}>
                         <button
                           type="button"
                           onClick={() => copyLogText(logKey, entry)}
@@ -562,12 +685,14 @@ export default function AgentDetailsModal({ isOpen, onClose, onEditConfiguration
                           <SeverityIcon className="w-3.5 h-3.5" />
                           <span>[{entry?.time || 'live'}] [{getDisplaySeverityLabel(entry)}]</span>
                         </div>
-                        <div className={isError 
+                        <div className={`${isAnalysis ? 'text-[13px] font-semibold leading-relaxed' : ''} ${isError 
                           ? (isDark ? 'text-rose-300' : 'text-rose-700') 
+                          : isAnalysis
+                          ? (isDark ? 'text-violet-300' : 'text-violet-700')
                           : isNotification 
                           ? (isDark ? 'text-sky-300' : 'text-sky-700') 
-                          : (isDark ? 'text-gray-200' : 'text-gray-800')}>
-                          {'>'} {typeof entry?.payload === 'string' ? entry.payload : JSON.stringify(entry?.payload)}
+                          : (isDark ? 'text-gray-200' : 'text-gray-800')}`}>
+                          {'>'} {formatPayloadForDisplay(entry?.payload)}
                         </div>
                       </div>
                     );
@@ -576,7 +701,7 @@ export default function AgentDetailsModal({ isOpen, onClose, onEditConfiguration
                   <ShimmerLines isDark={isDark} lineCount={4} />
                 ) : (
                   <div className={isDark ? 'text-gray-500' : 'text-gray-500'}>
-                    {'>'} Waiting for ERROR / NOTIFICATION events...
+                    {'>'} Waiting for ERROR / NOTIFICATION / ANALYSIS events...
                   </div>
                 )}
               </div>
