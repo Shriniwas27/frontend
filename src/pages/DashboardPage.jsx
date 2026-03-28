@@ -232,15 +232,17 @@ export default function DashboardPage() {
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
-      <Sidebar
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        theme={theme}
-        currentUser={currentUser}
-        groups={groups}
-        onLogout={handleLogout}
-        onManageGroups={() => setIsGroupManagerOpen(true)}
-      />
+      {!isAgentDetailsOpen && (
+        <Sidebar
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          theme={theme}
+          currentUser={currentUser}
+          groups={groups}
+          onLogout={handleLogout}
+          onManageGroups={() => setIsGroupManagerOpen(true)}
+        />
+      )}
 
       <main className="flex-1 flex flex-col overflow-hidden">
 
@@ -531,6 +533,7 @@ export default function DashboardPage() {
       <ChatbotWidget
         scope={isAgentDetailsOpen && selectedService ? 'agent-details' : 'dashboard'}
         agentId={isAgentDetailsOpen && selectedService ? (selectedService.agentId || selectedService.id) : null}
+        theme={theme}
       />
     </div>
   );

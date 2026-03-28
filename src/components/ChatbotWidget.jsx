@@ -6,12 +6,13 @@ const WS_AGENT_DETAILS_URL = `${getWebSocketBaseUrl()}/vantome-agent/`;
 const USER_AUDIO_SAMPLE_RATE = 16000;
 const AI_SAMPLE_RATE = 24000;
 
-export default function ChatbotWidget({ scope = 'dashboard', agentId = null }) {
+export default function ChatbotWidget({ scope = 'dashboard', agentId = null, theme = 'light' }) {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState('Disconnected');
   const [isAiSpeaking, setIsAiSpeaking] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const [messages, setMessages] = useState([]);
+  const isDark = theme === 'dark';
 
   const webSocket = useRef(null);
   const mediaStream = useRef(null);
@@ -359,7 +360,9 @@ export default function ChatbotWidget({ scope = 'dashboard', agentId = null }) {
         <button
           onClick={openSupport}
           aria-label="Open AI voice assistant"
-          className="fixed bottom-7 right-7 z-50 w-14 h-14 rounded-full bg-google-blue text-white shadow-lg flex items-center justify-center transition-all hover:scale-105 hover:shadow-xl"
+          className={`fixed bottom-7 right-7 z-50 w-14 h-14 rounded-full text-white flex items-center justify-center transition-all duration-200 hover:scale-105 ${isDark
+            ? 'bg-emerald-accent shadow-[0_0_0_3px_rgba(16,185,129,0.28),0_12px_26px_rgba(0,0,0,0.5)] hover:shadow-[0_0_0_4px_rgba(16,185,129,0.36),0_16px_34px_rgba(0,0,0,0.6)]'
+            : 'bg-google-blue shadow-[0_10px_24px_rgba(26,115,232,0.35)] hover:shadow-[0_14px_30px_rgba(26,115,232,0.45)]'}`}
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
