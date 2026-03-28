@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { updateService, getGcpProjects, getGcpServices } from '../api';
+import { updateService } from '../api';
 import { 
   XCircle, 
   Zap, 
@@ -14,9 +14,7 @@ import {
   Mail,
   Calendar,
   Loader2,
-  Save,
-  Cloud,
-  Server
+  Save
 } from 'lucide-react';
 
 const InputField = ({ label, isDark, ...props }) => (
@@ -86,11 +84,6 @@ const ConfigureServiceModal = ({ isOpen, onClose, theme, onSuccess, service }) =
     restriction: 'No Restrictions'
   });
   
-  const [projects, setProjects] = useState([]);
-  const [cloudServices, setCloudServices] = useState([]);
-  
-  const [isLoadingProjects, setIsLoadingProjects] = useState(false);
-  const [isLoadingServices, setIsLoadingServices] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
 
@@ -113,73 +106,8 @@ const ConfigureServiceModal = ({ isOpen, onClose, theme, onSuccess, service }) =
         email: service.notifications?.email || '',
         restriction: service.notifications?.restriction || 'No Restrictions'
       });
-
-      fetchProjects(service.agentId, service.gcpProject);
     }
   }, [service, isOpen]);
-
-  // When project changes visually, load services
-  useEffect(() => {
-    if (formData.gcpProject && service?.agentId && isOpen) {
-      fetchCloudServices(service.agentId, formData.gcpProject);
-    } else {
-      setCloudServices([]);
-    }
-  }, [formData.gcpProject, service, isOpen]);
-
-  const fetchProjects = async (agentId, preselectedProject) => {
-    setIsLoadingProjects(true);
-    try {
-      const userStr = localStorage.getItem('cybermedic_user');
-      const userId = userStr ? JSON.parse(userStr).id : null;
-      if (!userId) {
-        setIsLoadingProjects(false);
-        return;
-      }
-
-      const res = await getGcpProjects(userId);
-      if (res.data?.success && res.data.data) {
-        const mapped = res.data.data.map(p => {
-          // Fallback if the backend actually returns strings, else use object properties
-          if (typeof p === 'string') return { label: p, value: p };
-          const label = p.display_name ? `${p.display_name} (${p.project_id})` : p.project_id;
-          return { label, value: p.project_id };
-        });
-        setProjects(mapped);
-        
-        // If they didn't have one predefined but we fetched exactly 1 project, select it
-        if (!preselectedProject && mapped.length === 1) {
-          updateField('gcpProject', mapped[0].value);
-        }
-      }
-    } catch (err) {
-      console.error("Failed to fetch GCP projects", err);
-    } finally {
-      setIsLoadingProjects(false);
-    }
-  };
-
-  const fetchCloudServices = async (agentId, projectId) => {
-    setIsLoadingServices(true);
-    try {
-      const userStr = localStorage.getItem('cybermedic_user');
-      const userId = userStr ? JSON.parse(userStr).id : null;
-      if (!userId) {
-        setIsLoadingServices(false);
-        return;
-      }
-
-      const res = await getGcpServices(userId, projectId);
-      if (res.data?.success && res.data.data) {
-        setCloudServices(res.data.data.map(s => ({ label: s, value: s })));
-      }
-    } catch (err) {
-      console.error("Failed to fetch Cloud Run services for project", err);
-      // fallback manual input might be required if it fails, but dropdown is strictly asked
-    } finally {
-      setIsLoadingServices(false);
-    }
-  };
 
   if (!isOpen || !service) return null;
   const isDark = theme === 'dark';
@@ -242,42 +170,10 @@ const ConfigureServiceModal = ({ isOpen, onClose, theme, onSuccess, service }) =
           
           {submitError && (
             <div className="p-4 rounded-xl bg-rose-accent/10 border border-rose-accent/30 text-rose-accent text-sm font-semibold flex items-center gap-2">
-              <XCircle className="w-5 h-5 flex-shrink-0" />
+              <XCircle className="w-5 h-5 shrink-0" />
               {submitError}
             </div>
           )}
-
-          {/* GCP Integration */}
-          <section className={`p-8 rounded-2xl border ${isDark ? 'bg-dark-card border-dark-border shadow-lg shadow-black/20' : 'bg-white border-gray-200 shadow-sm'}`}>
-             <h2 className={`text-sm font-black uppercase tracking-widest mb-6 ${isDark ? 'text-emerald-accent' : 'text-google-blue'}`}>Cloud Target Integration</h2>
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <DropdownField 
-                  label="GCP Project ID" 
-                  isDark={isDark} 
-                  icon={Cloud}
-                  value={formData.gcpProject}
-                  onChange={() => {}}
-                  placeholder="Select a GCP Project"
-                  options={projects}
-                  loading={isLoadingProjects || isSubmitting}
-                  disabled={true}
-                />
-                <DropdownField 
-                  label="Cloud Run Service" 
-                  isDark={isDark} 
-                  icon={Server}
-                  value={formData.microserviceName}
-                  onChange={() => {}}
-                  placeholder="Select a Service"
-                  options={cloudServices}
-                  loading={isLoadingServices || isSubmitting}
-                  disabled={true}
-                />
-                <p className={`md:col-span-2 text-xs ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
-                  Project ID and service assignment are locked after agent creation.
-                </p>
-             </div>
-          </section>
 
           {/* Identity & Schedule */}
           <section className={`p-8 rounded-2xl border ${isDark ? 'bg-dark-card border-dark-border shadow-lg shadow-black/20' : 'bg-white border-gray-200 shadow-sm'}`}>
@@ -340,21 +236,21 @@ const ConfigureServiceModal = ({ isOpen, onClose, theme, onSuccess, service }) =
                 ))}
               </div>
 
-              <div className={`transition-all duration-300 overflow-hidden ${formData.operationMode === 'autonomous' ? 'max-h-[500px] opacity-100 mt-8' : 'max-h-0 opacity-0'}`}>
+              <div className={`transition-all duration-300 overflow-hidden ${formData.operationMode === 'autonomous' ? 'max-h-125 opacity-100 mt-8' : 'max-h-0 opacity-0'}`}>
                   <h3 className={`text-xs font-bold uppercase tracking-widest mb-4 ${isDark ? 'text-emerald-accent' : 'text-google-blue'}`}>Granted Action Permissions</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {permissionItems.map(({ key, icon: Icon, label, desc }) => (
                       <div key={key} onClick={() => updatePermission(key)} className={`flex items-start gap-4 p-4 rounded-xl border cursor-pointer transition-all ${
                           formData.permissions[key] ? (isDark ? 'bg-emerald-accent/5 border-emerald-accent/50' : 'bg-google-blue/5 border-google-blue/50') : (isDark ? 'bg-gray-900/50 border-dark-border hover:border-gray-600' : 'bg-gray-50 border-gray-200 hover:border-gray-300')
                         }`}>
-                        <div className={`mt-0.5 w-5 h-5 rounded flex items-center justify-center border-2 flex-shrink-0 transition-all ${
+                        <div className={`mt-0.5 w-5 h-5 rounded flex items-center justify-center border-2 shrink-0 transition-all ${
                           formData.permissions[key] ? (isDark ? 'bg-emerald-accent border-emerald-accent' : 'bg-google-blue border-google-blue') : (isDark ? 'border-gray-600' : 'border-gray-300')
                         }`}>
                           {formData.permissions[key] && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
                         </div>
                         <div className="flex flex-col gap-1 flex-1">
                           <div className="flex items-center gap-2">
-                            <Icon className={`w-4 h-4 flex-shrink-0 ${formData.permissions[key] ? (isDark ? 'text-emerald-accent' : 'text-google-blue') : 'text-gray-500'}`} />
+                            <Icon className={`w-4 h-4 shrink-0 ${formData.permissions[key] ? (isDark ? 'text-emerald-accent' : 'text-google-blue') : 'text-gray-500'}`} />
                             <p className={`text-sm font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{label}</p>
                           </div>
                           <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{desc}</p>
@@ -385,7 +281,7 @@ const ConfigureServiceModal = ({ isOpen, onClose, theme, onSuccess, service }) =
                   <ToggleSwitch enabled={formData.notificationsEnabled} onClick={() => {}} isDark={isDark} />
                 </div>
 
-                <div className={`transition-all duration-300 overflow-hidden ${formData.notificationsEnabled ? 'max-h-[300px] opacity-100' : 'max-h-0 opacity-0'}`}>
+                <div className={`transition-all duration-300 overflow-hidden ${formData.notificationsEnabled ? 'max-h-75 opacity-100' : 'max-h-0 opacity-0'}`}>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
                     <div>
                       <label className={`text-xs font-bold mb-2 block ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Contact Email Directory</label>
