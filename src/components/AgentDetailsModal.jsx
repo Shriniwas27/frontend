@@ -33,9 +33,18 @@ const isAnalysisSuggestionEntry = (entry) => {
   return severity.includes('analysis') || eventType === 'analysisandsuggestion';
 };
 
+const isResourceUpdateEntry = (entry) => {
+  const severity = String(entry?.severity || '').toLowerCase();
+  const eventType = String(entry?.eventType || '').toLowerCase();
+  return severity.includes('resource_update') || eventType === 'resource_update';
+};
+
 const getDisplaySeverityLabel = (entry) => {
   if (isAnalysisSuggestionEntry(entry)) {
     return 'ANALYSIS_SUGGESTION';
+  }
+  if (isResourceUpdateEntry(entry)) {
+    return 'RESOURCE_UPDATE';
   }
   if (isNotificationSeverity(entry?.severity) || entry?.eventType === 'notification') {
     return 'NOTIFICATION';
@@ -193,6 +202,41 @@ export default function AgentDetailsModal({ isOpen, onClose, onEditConfiguration
     }
   }, []);
 
+  const playResourceUpdateTone = useCallback(() => {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+
+      const ctx = new AudioCtx();
+      const now = ctx.currentTime;
+
+      const playNote = (freq, startAt, duration, gainValue) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, startAt);
+        gain.gain.setValueAtTime(0, startAt);
+        gain.gain.linearRampToValueAtTime(gainValue, startAt + 0.02);
+        gain.gain.linearRampToValueAtTime(0, startAt + duration);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(startAt);
+        osc.stop(startAt + duration + 0.02);
+      };
+
+      playNote(620, now, 0.16, 0.15);
+      playNote(780, now + 0.12, 0.18, 0.14);
+
+      window.setTimeout(() => {
+        ctx.close().catch(() => {});
+      }, 700);
+    } catch {
+      // Ignore browser autoplay and audio context errors.
+    }
+  }, []);
+
   const showQuickAlert = useCallback((kind) => {
     const now = Date.now();
     if (lastAlertRef.current.kind === kind && now - lastAlertRef.current.at < 1800) {
@@ -288,12 +332,15 @@ export default function AgentDetailsModal({ isOpen, onClose, onEditConfiguration
         const message = parsed?.message || 'A notification event was received.';
         const analysisText = parsed?.analysis || parsed?.suggestion || parsed?.details;
         const isAnalysisEvent = eventType === 'analysisandsuggestion';
+        const isResourceUpdateEvent = eventType === 'resource_update';
         const notificationEntry = {
           time: parsed?.time || new Date().toISOString(),
-          severity: isAnalysisEvent ? 'ANALYSIS_SUGGESTION' : 'NOTIFICATION',
-          eventType: isAnalysisEvent ? 'analysisandsuggestion' : 'notification',
+          severity: isAnalysisEvent ? 'ANALYSIS_SUGGESTION' : isResourceUpdateEvent ? 'RESOURCE_UPDATE' : 'NOTIFICATION',
+          eventType: isAnalysisEvent ? 'analysisandsuggestion' : isResourceUpdateEvent ? 'resource_update' : 'notification',
           level,
-          payload: isAnalysisEvent ? analysisText || 'No analysis provided.' : `${title}: ${message}`,
+          payload: isAnalysisEvent || isResourceUpdateEvent
+            ? analysisText || 'No details provided.'
+            : `${title}: ${message}`,
         };
 
         appendLogEntry(notificationEntry);
@@ -301,6 +348,8 @@ export default function AgentDetailsModal({ isOpen, onClose, onEditConfiguration
         if (isAnalysisEvent) {
           playSuggestionTone();
           showQuickAlert('suggestion');
+        } else if (isResourceUpdateEvent) {
+          playResourceUpdateTone();
         }
         if (typeof onNotification === 'function') {
           onNotification({ ...parsed, title, message, level });
@@ -335,7 +384,7 @@ export default function AgentDetailsModal({ isOpen, onClose, onEditConfiguration
     return () => {
       eventSource.close();
     };
-  }, [isOpen, agentLookupId, onNotification, playSuggestionTone, showQuickAlert]);
+  }, [isOpen, agentLookupId, onNotification, playResourceUpdateTone, playSuggestionTone, showQuickAlert]);
 
   useEffect(() => () => {
     if (copyTimerRef.current) {
@@ -366,13 +415,19 @@ export default function AgentDetailsModal({ isOpen, onClose, onEditConfiguration
   }, [lastStateUpdatedAt]);
 
   const displayedLogs = useMemo(
-    () => liveLogs.filter((entry) => !isNotificationSeverity(entry?.severity) && !isAnalysisSuggestionEntry(entry)),
+    () => liveLogs.filter(
+      (entry) => !isNotificationSeverity(entry?.severity) && !isAnalysisSuggestionEntry(entry) && !isResourceUpdateEntry(entry),
+    ),
     [liveLogs],
   );
 
   const incidentLogs = useMemo(
     () => liveLogs.filter(
-      (entry) => isErrorSeverity(entry?.severity) || isNotificationSeverity(entry?.severity) || isAnalysisSuggestionEntry(entry),
+      (entry) =>
+        isErrorSeverity(entry?.severity)
+        || isNotificationSeverity(entry?.severity)
+        || isAnalysisSuggestionEntry(entry)
+        || isResourceUpdateEntry(entry),
     ),
     [liveLogs],
   );
@@ -492,7 +547,7 @@ export default function AgentDetailsModal({ isOpen, onClose, onEditConfiguration
                     const SeverityIcon = hasError ? AlertTriangle : isNotification ? BellRing : Info;
                     const logKey = `live-${idx}`;
                     return (
-                    <div key={idx} className={`group relative p-3 rounded-lg border font-mono text-xs ui-soft-transition ${hasError
+                    <div key={idx} className={`group relative p-3 rounded-lg border font-mono text-xs ui-soft-transition ui-log-entry ${hasError
                         ? (isDark ? 'bg-rose-900/20 border-rose-500/40 text-rose-200' : 'bg-rose-50 border-rose-200 text-rose-700')
                         : (isDark ? 'bg-dark-card border-dark-border text-gray-300' : 'bg-white border-gray-200 text-gray-700')}`}>
                       <button
@@ -664,14 +719,25 @@ export default function AgentDetailsModal({ isOpen, onClose, onEditConfiguration
                     const isError = isErrorSeverity(entry?.severity);
                     const isNotification = isNotificationSeverity(entry?.severity);
                     const isAnalysis = isAnalysisSuggestionEntry(entry);
-                    const SeverityIcon = isError ? AlertTriangle : isAnalysis ? Sparkles : isNotification ? BellRing : Info;
+                    const isResourceUpdate = isResourceUpdateEntry(entry);
+                    const SeverityIcon = isError
+                      ? AlertTriangle
+                      : isAnalysis
+                      ? Sparkles
+                      : isResourceUpdate
+                      ? CheckCircle2
+                      : isNotification
+                      ? BellRing
+                      : Info;
                     const logKey = `incident-${idx}`;
                     return (
-                      <div key={`incident-${idx}`} className={`group relative border-l-2 pl-3 pr-16 py-2 rounded-r ui-soft-transition hover:translate-x-1 ${isError
+                      <div key={`incident-${idx}`} className={`group relative border-l-2 pl-3 pr-16 py-2 ui-soft-transition hover:translate-x-1 ui-log-entry ${isResourceUpdate ? 'rounded' : 'rounded-r'} ${isError
                         ? (isDark ? 'border-rose-400 bg-rose-950/30' : 'border-rose-400 bg-rose-50')
                         : isAnalysis
-                        ? (isDark ? 'border-violet-400 bg-violet-950/20' : 'border-violet-400 bg-violet-50')
-                        : (isDark ? 'border-sky-400 bg-sky-950/20' : 'border-sky-400 bg-sky-50')} ${isAnalysis ? 'ui-suggestion-flash' : ''}`}>
+                        ? (isDark ? 'border-sky-400 bg-sky-950/20' : 'border-sky-400 bg-sky-50')
+                        : isResourceUpdate
+                        ? (isDark ? 'border-emerald-400 bg-emerald-950/20' : 'border-emerald-400 bg-emerald-50')
+                        : (isDark ? 'border-violet-400 bg-violet-950/20' : 'border-violet-400 bg-violet-50')} ${isAnalysis ? 'ui-suggestion-flash suggestion-rotating-border' : ''}`}>
                         <button
                           type="button"
                           onClick={() => copyLogText(logKey, entry)}
@@ -685,12 +751,14 @@ export default function AgentDetailsModal({ isOpen, onClose, onEditConfiguration
                           <SeverityIcon className="w-3.5 h-3.5" />
                           <span>[{entry?.time || 'live'}] [{getDisplaySeverityLabel(entry)}]</span>
                         </div>
-                        <div className={`${isAnalysis ? 'text-[13px] font-semibold leading-relaxed' : ''} ${isError 
+                        <div className={`${isAnalysis || isResourceUpdate ? 'text-[13px] font-semibold leading-relaxed' : ''} ${isError 
                           ? (isDark ? 'text-rose-300' : 'text-rose-700') 
                           : isAnalysis
-                          ? (isDark ? 'text-violet-300' : 'text-violet-700')
+                          ? (isDark ? 'text-sky-300' : 'text-sky-700')
+                          : isResourceUpdate
+                          ? (isDark ? 'text-emerald-300' : 'text-emerald-700')
                           : isNotification 
-                          ? (isDark ? 'text-sky-300' : 'text-sky-700') 
+                          ? (isDark ? 'text-violet-300' : 'text-violet-700') 
                           : (isDark ? 'text-gray-200' : 'text-gray-800')}`}>
                           {'>'} {formatPayloadForDisplay(entry?.payload)}
                         </div>
@@ -701,7 +769,7 @@ export default function AgentDetailsModal({ isOpen, onClose, onEditConfiguration
                   <ShimmerLines isDark={isDark} lineCount={4} />
                 ) : (
                   <div className={isDark ? 'text-gray-500' : 'text-gray-500'}>
-                    {'>'} Waiting for ERROR / NOTIFICATION / ANALYSIS events...
+                    {'>'} Waiting for ERROR / NOTIFICATION / ANALYSIS / RESOURCE_UPDATE events...
                   </div>
                 )}
               </div>

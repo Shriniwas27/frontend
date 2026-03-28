@@ -148,6 +148,44 @@ select {
   }
 }
 
+@keyframes rotate-spectrum-colors {
+  0% {
+    filter: hue-rotate(0deg);
+  }
+  100% {
+    filter: hue-rotate(360deg);
+  }
+}
+
+.suggestion-rotating-border {
+  position: relative;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.suggestion-rotating-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 3px;
+  background: conic-gradient(
+    from 0deg,
+    #ff0000 0deg,
+    #ff7f00 51.43deg,
+    #ffff00 102.86deg,
+    #00ff00 154.29deg,
+    #0000ff 205.72deg,
+    #4b0082 257.14deg,
+    #9400d3 308.57deg,
+    #ff0000 360deg
+  );
+  animation: rotate-spectrum-colors 4s linear infinite;
+  pointer-events: none;
+  border-radius: 0.375rem;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
 .ui-suggestion-flash {
   animation: none;
   box-shadow: 0 6px 14px rgba(107, 114, 128, 0.14), 0 0 0 1px rgba(209, 213, 219, 0.55) inset;
@@ -168,6 +206,10 @@ select {
   box-shadow: 0 14px 28px rgba(107, 114, 128, 0.16), 0 4px 8px rgba(17, 24, 39, 0.08);
   border-color: #d1d5db;
   transform: translateY(-1px);
+}
+
+.ui-log-entry {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 .custom-scrollbar::-webkit-scrollbar {
