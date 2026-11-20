@@ -86,6 +86,12 @@ export const getUser = (userId) => api.get(`/api/users/${userId}`);
 export const createAccount = (data) => api.post('/api/accounts', data);
 export const getAccounts = (userId) => api.get(`/api/accounts/${userId}`);
 
+// --- GitHub Device Authorization ---
+export const startGitHub = (token, signal) =>
+  api.post('/api/github/device/start', null, { signal });
+export const pollGitHub = (token, signal) =>
+  api.post('/api/github/device/poll', null, { signal });
+
 // --- Groups ---
 export const createGroup = (data) => api.post('/api/groups', data);
 export const getGroups = (userId) => api.get(`/api/groups/${userId}`);

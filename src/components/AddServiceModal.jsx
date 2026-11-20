@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { registerService, getGlobalGcpProjects, getGlobalGcpServices } from '../api';
+import SelfHealingGitHubStep from './SelfHealingGitHubStep';
 import { 
   XCircle, 
   ChevronLeft, 
@@ -21,7 +22,7 @@ import {
   Server
 } from 'lucide-react';
 
-const STEPS = ['Cloud Target', 'Identity', 'Guardrails', 'Topology', 'Alerts'];
+const STEPS = ['Cloud Target', 'Identity', 'Guardrails', 'Self-Healing', 'Topology', 'Alerts'];
 
 const InputField = ({ label, isDark, ...props }) => (
   <div>
@@ -103,6 +104,7 @@ const defaultFormData = {
   email: '',
   contactNumber: '',
   restriction: 'No Restrictions',
+  selfHealingEnabled: false,
 };
 
 const AddServiceModal = ({ isOpen, onClose, theme, onSuccess }) => {
@@ -110,6 +112,8 @@ const AddServiceModal = ({ isOpen, onClose, theme, onSuccess }) => {
   const [formData, setFormData] = useState(defaultFormData);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
+  const [selfHealingEnabled, setSelfHealingEnabled] = useState(false);
+  const [githubAuthorized, setGithubAuthorized] = useState(false);
 
   const [projects, setProjects] = useState([]);
   const [cloudServices, setCloudServices] = useState([]);
@@ -212,6 +216,8 @@ const AddServiceModal = ({ isOpen, onClose, theme, onSuccess }) => {
       onClose();
       setStep(1);
       setFormData(defaultFormData);
+      setSelfHealingEnabled(false);
+      setGithubAuthorized(false);
     } catch (err) {
       const msg = err?.response?.data?.detail || err?.response?.data?.message || err.message || 'Submission failed';
       setSubmitError(msg);
@@ -420,8 +426,33 @@ const AddServiceModal = ({ isOpen, onClose, theme, onSuccess }) => {
             </div>
           )}
 
-          {/* Step 4: Topology */}
+          {/* Step 4: Optional self-healing GitHub authorization */}
           {step === 4 && (
+            <SelfHealingGitHubStep
+              isDark={isDark}
+              enabled={selfHealingEnabled}
+              onEnabledChange={(enabled) => {
+                setSelfHealingEnabled(enabled);
+                updateField('selfHealingEnabled', enabled);
+                if (!enabled) setGithubAuthorized(false);
+              }}
+              onComplete={() => {
+                updateField('selfHealingEnabled', true);
+                setSelfHealingEnabled(true);
+                setGithubAuthorized(true);
+                setStep(5);
+              }}
+              onSkip={() => {
+                updateField('selfHealingEnabled', false);
+                setSelfHealingEnabled(false);
+                setGithubAuthorized(false);
+                setStep(5);
+              }}
+            />
+          )}
+
+          {/* Step 5: Topology */}
+          {step === 5 && (
             <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2">
               <div className="flex justify-between items-center">
                 <h3 className={`text-sm font-bold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Agent Dependencies</h3>
@@ -458,8 +489,8 @@ const AddServiceModal = ({ isOpen, onClose, theme, onSuccess }) => {
             </div>
           )}
 
-          {/* Step 5: Alerts */}
-          {step === 5 && (
+          {/* Step 6: Alerts */}
+          {step === 6 && (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
               <div
                 onClick={() => updateField('notificationsEnabled', !formData.notificationsEnabled)}
@@ -553,13 +584,17 @@ const AddServiceModal = ({ isOpen, onClose, theme, onSuccess }) => {
           <div className="text-xs text-gray-500 font-mono">{step} / {STEPS.length}</div>
 
           <button
-            onClick={() => step < 5 ? setStep(s => s + 1) : handleInitialize()}
-            disabled={isSubmitting || (step === 1 && (!formData.gcpProject || !formData.microserviceName))}
+            onClick={() => step < 6 ? setStep(s => s + 1) : handleInitialize()}
+            disabled={
+              isSubmitting ||
+              (step === 4 && selfHealingEnabled && !githubAuthorized) ||
+              (step === 1 && (!formData.gcpProject || !formData.microserviceName))
+            }
             className={`flex items-center gap-2 px-8 py-2.5 rounded-lg font-bold text-sm hover:scale-105 active:scale-95 transition-all shadow-lg disabled:opacity-60 disabled:cursor-not-allowed disabled:scale-100 ${
               isDark ? 'bg-emerald-accent text-dark-bg shadow-emerald-accent/20' : 'bg-google-blue text-white shadow-google-blue/20'
             }`}
           >
-            {isSubmitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Initializing...</> : step === 5 ? 'INITIALIZE SYSTEM' : 'NEXT STEP →'}
+            {isSubmitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Initializing...</> : step === 6 ? 'INITIALIZE SYSTEM' : 'NEXT STEP →'}
           </button>
         </div>
       </div>
