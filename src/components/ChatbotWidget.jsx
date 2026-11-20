@@ -1,10 +1,34 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { getWebSocketBaseUrl } from '../api';
 
-const WS_DASHBOARD_URL = `${getWebSocketBaseUrl()}/vantome-agent/dashboard`;
-const WS_AGENT_DETAILS_URL = `${getWebSocketBaseUrl()}/vantome-agent/`;
+const WS_BASE_URL = `${getWebSocketBaseUrl()}/vantome-agent/`;
 const USER_AUDIO_SAMPLE_RATE = 16000;
 const AI_SAMPLE_RATE = 24000;
+const AudioContextClass = typeof window !== 'undefined' ? (window.AudioContext || window.webkitAudioContext) : null;
+
+function downsampleBuffer(buffer, inputSampleRate, outputSampleRate = 16000) {
+  if (outputSampleRate >= inputSampleRate) {
+    return buffer;
+  }
+  const sampleRateRatio = inputSampleRate / outputSampleRate;
+  const newLength = Math.round(buffer.length / sampleRateRatio);
+  const result = new Float32Array(newLength);
+  let offsetResult = 0;
+  let offsetBuffer = 0;
+  while (offsetResult < result.length) {
+    const nextOffsetBuffer = Math.round((offsetResult + 1) * sampleRateRatio);
+    let accum = 0;
+    let count = 0;
+    for (let i = offsetBuffer; i < nextOffsetBuffer && i < buffer.length; i += 1) {
+      accum += buffer[i];
+      count += 1;
+    }
+    result[offsetResult] = count > 0 ? accum / count : 0;
+    offsetResult += 1;
+    offsetBuffer = nextOffsetBuffer;
+  }
+  return result;
+}
 
 export default function ChatbotWidget({ scope = 'dashboard', agentId = null, theme = 'light' }) {
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -138,37 +162,74 @@ export default function ChatbotWidget({ scope = 'dashboard', agentId = null, the
     webSocket.current.send(JSON.stringify({ type: 'video', data: base64Data }));
   }, []);
 
+  const ensureAudioContext = useCallback(() => {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!aiAudioContext.current || aiAudioContext.current.state === 'closed') {
+        // Use system native sample rate (e.g. 44100 or 48000). The browser automatically resamples.
+        aiAudioContext.current = new AudioCtx();
+      }
+      if (aiAudioContext.current.state === 'suspended') {
+        aiAudioContext.current.resume().catch((e) => console.warn('AudioContext resume:', e));
+      }
+      return aiAudioContext.current;
+    } catch (e) {
+      console.error('Failed to initialize AudioContext:', e);
+      return null;
+    }
+  }, []);
+
+  const clearAudioQueue = useCallback(() => {
+    pendingSources.current.forEach((src) => {
+      try {
+        src.stop();
+      } catch {
+        // Ignore already-stopped nodes
+      }
+    });
+    pendingSources.current = [];
+    nextStartTime.current = 0;
+    setIsAiSpeaking(false);
+  }, []);
+
   const playAudioChunk = useCallback((base64Data) => {
     try {
-      if (!aiAudioContext.current) return;
-
-      if (aiAudioContext.current.state === 'suspended') {
-        aiAudioContext.current.resume();
-      }
+      const ctx = ensureAudioContext();
+      if (!ctx) return;
 
       const binaryString = atob(base64Data);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i += 1) {
+      const len = binaryString.length;
+      const numSamples = Math.floor(len / 2);
+      if (numSamples === 0) return;
+
+      // Extract raw 16-bit PCM little-endian samples
+      const bytes = new Uint8Array(numSamples * 2);
+      for (let i = 0; i < numSamples * 2; i += 1) {
         bytes[i] = binaryString.charCodeAt(i);
       }
 
-      const int16Data = new Int16Array(bytes.buffer);
-      const float32Data = new Float32Array(int16Data.length);
-      for (let i = 0; i < int16Data.length; i += 1) {
+      const int16Data = new Int16Array(bytes.buffer, 0, numSamples);
+      const float32Data = new Float32Array(numSamples);
+      for (let i = 0; i < numSamples; i += 1) {
         float32Data[i] = int16Data[i] / 32768.0;
       }
 
-      const buffer = aiAudioContext.current.createBuffer(1, float32Data.length, AI_SAMPLE_RATE);
+      // Gemini Live sends 24000Hz 16-bit PCM mono
+      const buffer = ctx.createBuffer(1, numSamples, AI_SAMPLE_RATE);
       buffer.copyToChannel(float32Data, 0);
 
-      const source = aiAudioContext.current.createBufferSource();
+      const source = ctx.createBufferSource();
       source.buffer = buffer;
-      source.connect(aiAudioContext.current.destination);
 
-      const now = aiAudioContext.current.currentTime;
-      const JITTER_BUFFER = 0.1;
-      if (nextStartTime.current < now + JITTER_BUFFER) {
-        nextStartTime.current = now + JITTER_BUFFER;
+      const gainNode = ctx.createGain();
+      gainNode.gain.value = 1.0;
+      source.connect(gainNode);
+      gainNode.connect(ctx.destination);
+
+      const now = ctx.currentTime;
+      // Schedule immediately or seamlessly stitch after the last chunk
+      if (nextStartTime.current < now) {
+        nextStartTime.current = now + 0.02;
       }
 
       source.start(nextStartTime.current);
@@ -183,14 +244,13 @@ export default function ChatbotWidget({ scope = 'dashboard', agentId = null, the
           if (speakingTimer.current) {
             window.clearTimeout(speakingTimer.current);
           }
-          speakingTimer.current = window.setTimeout(() => setIsAiSpeaking(false), 200);
+          speakingTimer.current = window.setTimeout(() => setIsAiSpeaking(false), 250);
         }
       };
     } catch (err) {
-      // Keep UI responsive even if one audio chunk fails.
       console.error('playAudioChunk error:', err);
     }
-  }, []);
+  }, [ensureAudioContext]);
 
   const startCall = useCallback(async () => {
     try {
@@ -203,68 +263,110 @@ export default function ChatbotWidget({ scope = 'dashboard', agentId = null, the
         throw new Error('Browser does not support media devices');
       }
 
-      mediaStream.current = await navigator.mediaDevices.getUserMedia({
-        video: { width: 640, height: 480, facingMode: 'user' },
-        audio: { echoCancellation: true, noiseSuppression: true, sampleRate: USER_AUDIO_SAMPLE_RATE },
-      });
+      let stream = null;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { width: 640, height: 480, facingMode: 'user' },
+          audio: { echoCancellation: true, noiseSuppression: true, sampleRate: USER_AUDIO_SAMPLE_RATE },
+        });
+      } catch (mediaErr) {
+        console.warn('Camera not available or denied, falling back to audio only:', mediaErr);
+        stream = await navigator.mediaDevices.getUserMedia({
+          audio: { echoCancellation: true, noiseSuppression: true, sampleRate: USER_AUDIO_SAMPLE_RATE },
+        });
+      }
+      mediaStream.current = stream;
 
-      if (videoRef.current) {
+      if (videoRef.current && stream.getVideoTracks().length > 0) {
         videoRef.current.srcObject = mediaStream.current;
-        await videoRef.current.play();
+        await videoRef.current.play().catch(() => {});
       }
 
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      aiAudioContext.current = new AudioCtx({ sampleRate: AI_SAMPLE_RATE });
+      ensureAudioContext();
 
       const params = new URLSearchParams();
-      const isAgentScope = scope === 'agent-details' && agentId;
-
-      if (isAgentScope) {
+      if (scope === 'agent-details' && agentId) {
         params.set('agent_id', String(agentId));
+        params.set('source', 'agent-details');
+      } else {
+        params.set('source', 'dashboard');
       }
 
-      const wsBaseUrl = isAgentScope ? WS_AGENT_DETAILS_URL : WS_DASHBOARD_URL;
-      const wsUrl = params.toString() ? `${wsBaseUrl}?${params.toString()}` : wsBaseUrl;
+      const wsUrl = `${WS_BASE_URL}?${params.toString()}`;
       webSocket.current = new WebSocket(wsUrl);
 
-      webSocket.current.onopen = () => {
+      webSocket.current.onopen = async () => {
         stopRingingTone();
         setConnectionStatus('Connected');
-        streamInterval.current = window.setInterval(sendVideoFrame, 150);
+        if (mediaStream.current?.getVideoTracks().length > 0) {
+          streamInterval.current = window.setInterval(sendVideoFrame, 1000);
+        }
 
         if (!mediaStream.current) return;
 
-        userAudioContext.current = new AudioCtx({ sampleRate: USER_AUDIO_SAMPLE_RATE });
-        const source = userAudioContext.current.createMediaStreamSource(mediaStream.current);
-        userAudioProcessor.current = userAudioContext.current.createScriptProcessor(4096, 1, 1);
-        source.connect(userAudioProcessor.current);
-        userAudioProcessor.current.connect(userAudioContext.current.destination);
-
-        userAudioProcessor.current.onaudioprocess = (e) => {
-          if (!webSocket.current || webSocket.current.readyState !== WebSocket.OPEN) return;
-
-          const input = e.inputBuffer.getChannelData(0);
-          const int16 = new Int16Array(input.length);
-          for (let i = 0; i < input.length; i += 1) {
-            const s = Math.max(-1, Math.min(1, input[i]));
-            int16[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+        try {
+          if (!AudioContextClass) return;
+          let uCtx;
+          try {
+            uCtx = new AudioContextClass({ sampleRate: USER_AUDIO_SAMPLE_RATE });
+          } catch {
+            uCtx = new AudioContextClass();
+          }
+          userAudioContext.current = uCtx;
+          if (uCtx.state === 'suspended') {
+            await uCtx.resume().catch(() => {});
           }
 
-          const bytes = new Uint8Array(int16.buffer);
-          let binary = '';
-          const chunkSize = 8192;
-          for (let i = 0; i < bytes.length; i += chunkSize) {
-            binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
-          }
+          const source = uCtx.createMediaStreamSource(mediaStream.current);
+          const processor = uCtx.createScriptProcessor(4096, 1, 1);
+          userAudioProcessor.current = processor;
 
-          const b64 = btoa(binary);
-          webSocket.current.send(JSON.stringify({ type: 'audio', data: b64 }));
-        };
+          // Mute gain node prevents local microphone from echoing back through speakers
+          const inputMute = uCtx.createGain();
+          inputMute.gain.value = 0;
+          source.connect(processor);
+          processor.connect(inputMute);
+          inputMute.connect(uCtx.destination);
+
+          processor.onaudioprocess = (e) => {
+            if (!webSocket.current || webSocket.current.readyState !== WebSocket.OPEN) return;
+
+            const input = e.inputBuffer.getChannelData(0);
+            const downsampled = downsampleBuffer(input, e.inputBuffer.sampleRate, USER_AUDIO_SAMPLE_RATE);
+            const int16 = new Int16Array(downsampled.length);
+            for (let i = 0; i < downsampled.length; i += 1) {
+              const s = Math.max(-1, Math.min(1, downsampled[i]));
+              int16[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+            }
+
+            const bytes = new Uint8Array(int16.buffer);
+            let binary = '';
+            const chunkSize = 8192;
+            for (let i = 0; i < bytes.length; i += chunkSize) {
+              binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+            }
+
+            const b64 = btoa(binary);
+            webSocket.current.send(JSON.stringify({ type: 'audio', data: b64 }));
+          };
+        } catch (audioErr) {
+          console.error('Failed to initialize microphone audio stream:', audioErr);
+        }
       };
 
       webSocket.current.onmessage = (event) => {
         try {
           const msg = JSON.parse(event.data);
+
+          if (msg.type === 'interrupted') {
+            clearAudioQueue();
+            return;
+          }
+
+          if (msg.type === 'close') {
+            stopCall();
+            return;
+          }
 
           if (msg.type === 'audio') {
             playAudioChunk(msg.data);
@@ -323,6 +425,7 @@ export default function ChatbotWidget({ scope = 'dashboard', agentId = null, the
   }, [agentId, playAudioChunk, playRingingTone, scope, sendVideoFrame, stopCall, stopRingingTone]);
 
   const openSupport = () => {
+    ensureAudioContext();
     setIsChatOpen(true);
     startCall();
   };
@@ -400,20 +503,35 @@ export default function ChatbotWidget({ scope = 'dashboard', agentId = null, the
 
               <div className="flex-none flex flex-col items-center pt-8 pb-4">
                 <div
-                  className="rounded-full flex items-center justify-center text-4xl transition-all duration-300"
+                  className="rounded-full flex items-center justify-center text-4xl transition-all duration-300 relative select-none"
                   style={{
                     width: 90,
                     height: 90,
-                    background: isAiSpeaking ? 'rgba(26,115,232,0.2)' : 'rgba(26,115,232,0.1)',
+                    background: isAiSpeaking ? 'rgba(26,115,232,0.22)' : 'rgba(26,115,232,0.1)',
                     boxShadow: isAiSpeaking
-                      ? '0 0 0 12px rgba(26,115,232,0.14), 0 0 0 24px rgba(26,115,232,0.06)'
+                      ? '0 0 0 12px rgba(26,115,232,0.2), 0 0 0 24px rgba(26,115,232,0.08)'
                       : '0 0 0 8px rgba(26,115,232,0.05)',
                   }}
                 >
-                  AI
+                  {isAiSpeaking ? (
+                    <div className="flex items-center gap-1.5 h-8">
+                      <span className="w-1.5 bg-google-blue rounded-full animate-bounce" style={{ height: '24px', animationDuration: '0.6s' }}></span>
+                      <span className="w-1.5 bg-google-blue rounded-full animate-bounce" style={{ height: '32px', animationDuration: '0.4s', animationDelay: '0.1s' }}></span>
+                      <span className="w-1.5 bg-google-blue rounded-full animate-bounce" style={{ height: '18px', animationDuration: '0.7s', animationDelay: '0.2s' }}></span>
+                      <span className="w-1.5 bg-google-blue rounded-full animate-bounce" style={{ height: '28px', animationDuration: '0.5s', animationDelay: '0.3s' }}></span>
+                      <span className="w-1.5 bg-google-blue rounded-full animate-bounce" style={{ height: '16px', animationDuration: '0.6s', animationDelay: '0.15s' }}></span>
+                    </div>
+                  ) : (
+                    <span className="font-bold text-google-blue">AI</span>
+                  )}
                 </div>
                 <h3 className="mt-6 font-semibold text-lg text-gray-900">Vantome Assistant</h3>
-                <p className="opacity-70 text-sm mt-1">{connectionStatus}</p>
+                <div className="flex items-center gap-2 mt-1">
+                  {isAiSpeaking && <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>}
+                  <p className={`text-sm ${isAiSpeaking ? 'text-google-blue font-semibold' : 'opacity-70'}`}>
+                    {isAiSpeaking ? '🔊 Speaking...' : connectionStatus}
+                  </p>
+                </div>
               </div>
 
               <div className="flex-1 overflow-y-auto px-4 py-2 flex flex-col gap-2">
