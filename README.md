@@ -103,7 +103,7 @@ Copy-Item .env.example .env
 Set backend URL:
 
 ```env
-VITE_BACKEND_URL=http://localhost:8080
+VITE_BACKEND_URL=https://vantome-backend-559060975495.asia-south1.run.app
 ```
 
 ### 6.3 Start dev server
@@ -158,4 +158,22 @@ Step 5: Check the result on the Vantome UI.
 ## 12. Notes
 
 - Do not commit `.env` with private URLs/tokens.
+
+## 13. Container Deployment
+
+The frontend includes a production Docker image and an nginx SPA configuration.
+The production build defaults to the deployed backend URL.
+
+```bash
+docker build -t vantome-frontend .
+docker run --rm -p 8080:8080 vantome-frontend
+```
+
+To override the backend URL at build time:
+
+```bash
+docker build \
+  --build-arg VITE_BACKEND_URL=https://vantome-backend-559060975495.asia-south1.run.app \
+  -t vantome-frontend .
+```
 - Use `.env.example` as the template for collaborators/evaluators.

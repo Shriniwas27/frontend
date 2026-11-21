@@ -1,6 +1,10 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
+const DEFAULT_BACKEND_URL = 'https://vantome-backend-559060975495.asia-south1.run.app';
+const API_BASE_URL = (
+  import.meta.env.VITE_BACKEND_URL ||
+  DEFAULT_BACKEND_URL
+).replace(/\/+$/, '');
 export const AUTH_TOKEN_KEY = 'cybermedic_token';
 export const AUTH_USER_KEY = 'cybermedic_user';
 
@@ -16,10 +20,6 @@ export const getWebSocketBaseUrl = () => {
     return API_BASE_URL.replace(/^https:/, 'wss:').replace(/^http:/, 'ws:');
   }
 };
-
-if (!API_BASE_URL) {
-  throw new Error('Missing VITE_BACKEND_URL in frontend .env file');
-}
 
 const api = axios.create({
   baseURL: API_BASE_URL,
