@@ -140,32 +140,28 @@ const ConfigureServiceModal = ({ isOpen, onClose, theme, onSuccess, service }) =
   ];
 
   return (
-    <div className={`fixed inset-0 z-50 flex flex-col font-sans transition-colors duration-300 ${isDark ? 'bg-dark-bg selection:bg-google-blue/20 selection:text-google-blue' : 'bg-gray-50'}`}>
+    <div className="fixed inset-0 z-50 flex flex-col bg-app-bg text-app-text-primary">
       
       {/* Top Header */}
-      <div className={`flex items-center justify-between px-8 py-5 border-b shadow-sm ${isDark ? 'border-dark-border bg-dark-card' : 'border-gray-200 bg-white'}`}>
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-app-border bg-app-card px-4 py-4 sm:px-8">
         <div>
-          <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-            Configuration Profile
+          <h1 className="workspace-title text-2xl">
+            Configuration profile
           </h1>
           <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Agent ID: <span className="font-mono">{service.agentId}</span></p>
         </div>
         <div className="flex gap-4">
-          <button onClick={onClose} disabled={isSubmitting} className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-colors ${
-            isDark ? 'text-gray-400 hover:bg-gray-800' : 'text-gray-600 hover:bg-gray-200'
-          }`}>
-            Cancel Stop
+          <button onClick={onClose} disabled={isSubmitting} className="brand-button brand-button-outline">
+            Cancel
           </button>
-          <button onClick={handleUpdate} disabled={isSubmitting} className={`flex items-center gap-2 px-8 py-2.5 rounded-xl font-bold text-sm shadow-lg disabled:opacity-60 transition-all ${
-            isDark ? 'bg-emerald-accent text-dark-bg shadow-emerald-accent/20 hover:scale-105' : 'bg-google-blue text-white shadow-google-blue/20 hover:scale-105'
-          }`}>
-            {isSubmitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving Configuration...</> : <><Save className="w-4 h-4" /> Save Profile</>}
+          <button onClick={handleUpdate} disabled={isSubmitting} className="brand-button brand-button-primary">
+            {isSubmitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</> : <><Save className="w-4 h-4" /> Save profile</>}
           </button>
         </div>
-      </div>
+      </header>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+      <div className="custom-scrollbar flex-1 overflow-y-auto p-4 sm:p-8">
         <div className="max-w-4xl mx-auto space-y-10">
           
           {submitError && (

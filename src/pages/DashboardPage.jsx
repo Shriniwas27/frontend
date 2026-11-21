@@ -9,8 +9,6 @@ import {
   Zap,
   Share2,
   Loader2,
-  Search,
-  Filter,
   FolderOpen,
   Grid3X3,
   List,
@@ -74,15 +72,16 @@ export default function DashboardPage() {
   const toggleTheme = () => {
     const newTheme = theme === 'dark' ? 'light' : 'dark';
     setTheme(newTheme);
-    document.documentElement.classList.remove('dark', 'light');
-    document.documentElement.classList.add(newTheme);
-    showToast(`Switched to ${newTheme.toUpperCase()} mode`, 'info');
+    showToast(`Switched to ${newTheme} theme`, 'info');
   };
 
   useEffect(() => {
-    document.documentElement.classList.remove('dark', 'light');
-    document.documentElement.classList.add('light');
+    const root = document.documentElement;
+    root.classList.toggle('dark', theme === 'dark');
+    return () => root.classList.remove('dark');
+  }, [theme]);
 
+  useEffect(() => {
     // Load user
     const storedUser = localStorage.getItem('cybermedic_user');
     if (storedUser) {
@@ -228,7 +227,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className={`flex h-screen transition-colors duration-300 ${isDark ? 'bg-dark-bg' : 'bg-gray-100'} font-sans selection:bg-google-blue/20 selection:text-google-blue overflow-hidden`}>
+    <div className="flex h-dvh overflow-hidden bg-app-bg text-app-text-primary">
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
@@ -236,7 +235,6 @@ export default function DashboardPage() {
         <Sidebar
           activeTab={activeTab}
           setActiveTab={setActiveTab}
-          theme={theme}
           currentUser={currentUser}
           groups={groups}
           onLogout={handleLogout}
@@ -244,18 +242,17 @@ export default function DashboardPage() {
         />
       )}
 
-      <main className="flex-1 flex flex-col overflow-hidden">
+      <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
 
         <TopHeader
           isDark={isDark}
-          theme={theme}
           toggleTheme={toggleTheme}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
         />
 
         {isAgentDetailsOpen && selectedService ? (
-          <div className="flex-1 overflow-hidden p-6">
+          <div className="min-h-0 flex-1 overflow-hidden p-2 sm:p-6">
             <AgentDetailsModal
               isOpen={isAgentDetailsOpen}
               onClose={() => setIsAgentDetailsOpen(false)}
@@ -268,58 +265,49 @@ export default function DashboardPage() {
             />
           </div>
         ) : (
-        <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+        <div className="custom-scrollbar flex-1 overflow-y-auto px-3 py-5 sm:px-6 sm:py-7 lg:px-8">
 
-          <div className="flex justify-between items-end mb-8">
-            <div className="animate-in fade-in slide-in-from-left-4">
-              <h2 className={`text-3xl font-bold tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>{activeTab}</h2>
-              <p className={isDark ? 'text-gray-500' : 'text-gray-600'}>Real-time observability and self-healing orchestration.</p>
+          <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <h1 className="workspace-title text-3xl sm:text-4xl">{activeTab}</h1>
+              <p className="mt-1 text-sm text-app-text-secondary">Monitor services and manage your self-healing agents.</p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 onClick={() => setIsGroupManagerOpen(true)}
-                className={`px-4 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 transition-all border ${isDark ? 'border-dark-border text-gray-400 hover:text-white hover:border-gray-500' : 'border-gray-200 text-gray-600 hover:text-gray-900 hover:border-gray-300 bg-white'
-                  }`}
+                className="brand-button brand-button-outline"
               >
-                <FolderOpen className="w-4 h-4" /> Manage Groups
+                <FolderOpen className="size-4" aria-hidden="true" /> Manage groups
               </button>
               <button
                 onClick={() => setIsModalOpen(true)}
-                className={`px-6 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 hover:scale-105 transition-all shadow-lg ${isDark ? 'bg-emerald-accent text-dark-bg shadow-emerald-accent/20' : 'bg-google-blue text-white shadow-google-blue/20'
-                  }`}
+                className="brand-button brand-button-primary"
               >
-                <Plus className="w-5 h-5" /> NEW AGENT
+                <Plus className="size-5" aria-hidden="true" /> New agent
               </button>
             </div>
           </div>
 
           {/* Metric Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-            <MetricCard title="Active Agents" value={services.length.toString()} icon={Cpu} color={isDark ? "text-emerald-accent" : "text-google-blue"} theme={theme} />
-            <MetricCard title="System Health" value="99.8%" icon={CheckCircle2} color="text-emerald-accent" theme={theme} />
-            <MetricCard title="Self-Healing (24h)" value="1.2k" icon={ShieldCheck} color={isDark ? "text-emerald-accent" : "text-green-600"} theme={theme} />
-            <MetricCard title="Manual Saves" value="84" icon={Zap} color={isDark ? "text-amber-400" : "text-amber-600"} theme={theme} />
+          <div className="mb-8 grid grid-cols-1 gap-3 min-[440px]:grid-cols-2 md:gap-4 xl:grid-cols-4">
+            <MetricCard title="Active agents" value={services.length.toString()} icon={Cpu} tone="blue" />
+            <MetricCard title="System health" value="99.8%" icon={CheckCircle2} tone="green" />
+            <MetricCard title="Self-healing (24h)" value="1.2k" icon={ShieldCheck} tone="blue" />
+            <MetricCard title="Manual saves" value="84" icon={Zap} tone="yellow" />
           </div>
 
           {/* Recent Services */}
           {recentServices.length > 0 && (
             <div className="mb-10">
-              <h3 className={`text-sm font-bold uppercase tracking-widest mb-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                Recently Added
-              </h3>
+              <h2 className="workspace-section-title mb-4">Recently added</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {recentServices.map((service, idx) => (
-                  <div key={service.id} className={`p-4 rounded-xl border flex items-center gap-4 transition-all hover:shadow-md ${isDark ? 'bg-dark-card border-dark-border hover:border-gray-600' : 'ui-card-soft ui-card-soft-hover'
-                    }`}>
-                    <div className={`w-2 h-2 rounded-full shrink-0 ${service.status === 'Operational' ? 'bg-emerald-accent' : service.status === 'Degraded' ? 'bg-amber-400' : 'bg-rose-accent'
-                      }`}></div>
+                {recentServices.map((service) => (
+                  <div key={service.id} className="ui-card-soft flex items-center gap-3 rounded-2xl p-4">
                     <div className="min-w-0 flex-1">
                       <p className={`text-sm font-semibold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{getDisplayServiceName(service.microserviceName)}</p>
                       <p className="text-xs text-gray-500">{service.gcpProject || 'No Project'} · {service.agentName}</p>
                     </div>
-                    <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${service.status === 'Operational' ? 'bg-emerald-accent/10 text-emerald-500' :
-                        service.status === 'Degraded' ? 'bg-amber-400/10 text-amber-500' : 'bg-rose-accent/10 text-rose-500'
-                      }`}>{service.status}</span>
+                    <span className="preview-badge" data-tone={service.status === 'Operational' ? 'green' : service.status === 'Degraded' ? 'yellow' : 'red'}>{service.status}</span>
                   </div>
                 ))}
               </div>
@@ -329,19 +317,15 @@ export default function DashboardPage() {
           {/* Filters & View Toggle */}
           <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
             <div className="flex items-center gap-3 flex-wrap">
-              <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Active Microservices</h3>
+              <h2 className="workspace-section-title mr-1">Active microservices</h2>
               <div className="flex gap-2 flex-wrap">
-                {['ALL', 'Operational', 'ISSUES'].map(f => (
+                {[['ALL', 'All'], ['Operational', 'Operational'], ['ISSUES', 'Issues']].map(([value, label]) => (
                   <button
-                    key={f}
-                    onClick={() => setServiceFilter(f)}
-                    className={`px-4 py-1.5 rounded-full text-[10px] font-bold transition-all border ${serviceFilter === f
-                        ? (f === 'ISSUES'
-                          ? (isDark ? 'bg-rose-accent text-white border-rose-accent shadow-md shadow-rose-accent/20' : 'bg-rose-600 text-white border-rose-600 shadow-md shadow-rose-600/20')
-                          : (isDark ? 'bg-emerald-accent text-dark-bg border-emerald-accent' : 'bg-google-blue text-white border-google-blue'))
-                        : (isDark ? 'bg-gray-900 border-dark-border text-gray-500 hover:text-white' : 'bg-white border-gray-200 text-gray-500 hover:text-gray-900')
-                      }`}
-                  >{f}</button>
+                    key={value}
+                    onClick={() => setServiceFilter(value)}
+                    aria-pressed={serviceFilter === value}
+                    className="workspace-filter px-3"
+                  >{label}</button>
                 ))}
               </div>
               {uniqueProjects.length > 1 && (
@@ -349,12 +333,11 @@ export default function DashboardPage() {
                   <select
                     value={projectFilter}
                     onChange={(e) => setProjectFilter(e.target.value)}
-                    className={`pl-3 pr-8 py-1.5 rounded-full text-[10px] font-bold border appearance-none cursor-pointer transition-all ${projectFilter !== 'ALL'
-                        ? (isDark ? 'bg-google-blue/20 border-google-blue text-google-blue' : 'bg-google-blue/10 border-google-blue text-google-blue')
-                        : (isDark ? 'bg-gray-900 border-dark-border text-gray-500' : 'bg-white border-gray-200 text-gray-500')
-                      }`}
+                    aria-label="Filter by project"
+                    data-selected={projectFilter !== 'ALL'}
+                    className="workspace-filter max-w-full cursor-pointer appearance-none pl-3 pr-8"
                   >
-                    <option value="ALL">All Projects</option>
+                    <option value="ALL">All projects</option>
                     {uniqueProjects.map(p => (
                       <option key={p} value={p}>{p}</option>
                     ))}
@@ -367,15 +350,19 @@ export default function DashboardPage() {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setViewMode('flat')}
-                className={`p-2 rounded-lg transition-all ${viewMode === 'flat' ? (isDark ? 'bg-gray-800 text-white' : 'bg-gray-200 text-gray-900') : 'text-gray-400 hover:text-gray-600'}`}
-                title="Flat View"
+                className="workspace-icon-button"
+                aria-pressed={viewMode === 'flat'}
+                title="Flat view"
+                aria-label="Flat view"
               >
                 <Grid3X3 className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setViewMode('grouped')}
-                className={`p-2 rounded-lg transition-all ${viewMode === 'grouped' ? (isDark ? 'bg-gray-800 text-white' : 'bg-gray-200 text-gray-900') : 'text-gray-400 hover:text-gray-600'}`}
-                title="Grouped View"
+                className="workspace-icon-button"
+                aria-pressed={viewMode === 'grouped'}
+                title="Grouped view"
+                aria-label="Grouped view"
               >
                 <List className="w-4 h-4" />
               </button>
@@ -384,10 +371,12 @@ export default function DashboardPage() {
 
           {/* Empty State */}
           {!isLoading && filteredServices.length === 0 && (
-            <div className={`text-center py-10 rounded-xl border border-dashed ${isDark ? 'border-gray-800 text-gray-600' : 'border-gray-300 text-gray-400'}`}>
-              <Cpu className="w-10 h-10 mx-auto mb-3 opacity-50" />
-              <p className="text-sm font-bold">No active microservices found.</p>
-              <p className="text-xs mt-1">Click "NEW SERVICE" to register an agent.</p>
+            <div className="ui-card-soft rounded-2xl p-8 text-center">
+              <span className="landing-feature-icon mx-auto" data-tone="blue"><Cpu aria-hidden="true" /></span>
+              <p className="font-medium">No matching microservices</p>
+              <p className="mt-1 text-sm text-app-text-secondary">
+                {services.length ? 'Try another search or change your filters.' : 'Register an agent to start monitoring a service.'}
+              </p>
             </div>
           )}
 
@@ -396,7 +385,7 @@ export default function DashboardPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10 transition-all">
               {filteredServices.map((service, idx) => (
                 <div key={service.id} className="animate-in fade-in slide-in-from-bottom-2" style={{ animationDelay: `${idx * 50}ms` }}>
-                  <ServiceCard {...service} theme={theme} onAction={(action) => handleAction(action, service)} />
+                  <ServiceCard {...service} onAction={(action) => handleAction(action, service)} />
                 </div>
               ))}
             </div>
@@ -422,7 +411,7 @@ export default function DashboardPage() {
                     {group.services?.length > 0 ? (
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {group.services.map(service => (
-                          <ServiceCard key={service.id} {...service} theme={theme} onAction={(action) => handleAction(action, service)} />
+                          <ServiceCard key={service.id} {...service} onAction={(action) => handleAction(action, service)} />
                         ))}
                       </div>
                     ) : (
@@ -446,7 +435,7 @@ export default function DashboardPage() {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {projectServices.map(service => (
-                        <ServiceCard key={service.id} {...service} theme={theme} onAction={(action) => handleAction(action, service)} />
+                        <ServiceCard key={service.id} {...service} onAction={(action) => handleAction(action, service)} />
                       ))}
                     </div>
                   </div>
@@ -456,18 +445,17 @@ export default function DashboardPage() {
           )}
 
           {/* Live Event Stream */}
-          <div className={`border rounded-2xl p-6 transition-colors ${isDark ? 'bg-dark-card border-dark-border' : 'ui-card-soft'
-            }`}>
-            <div className="flex items-center justify-between mb-6">
+          <div className="ui-card-soft rounded-2xl p-4 sm:p-6">
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-3">
-                <Terminal className={isDark ? 'text-emerald-accent' : 'text-google-blue'} />
-                <h3 className={`text-xs font-black uppercase tracking-widest ${isDark ? 'text-white' : 'text-gray-900'}`}>Live Event Stream</h3>
+                <Terminal className="size-5 text-google-blue" aria-hidden="true" />
+                <h2 className="workspace-section-title">Live event stream</h2>
               </div>
               <button
                 onClick={() => showToast('Log export started', 'success')}
-                className="text-[10px] font-bold text-gray-500 hover:text-emerald-accent transition-colors flex items-center gap-2"
+                className="workspace-filter inline-flex items-center gap-2 px-3"
               >
-                <Share2 className="w-3 h-3" /> EXPORT
+                <Share2 className="size-3" aria-hidden="true" /> Export
               </button>
             </div>
 
@@ -533,7 +521,6 @@ export default function DashboardPage() {
       <ChatbotWidget
         scope={isAgentDetailsOpen && selectedService ? 'agent-details' : 'dashboard'}
         agentId={isAgentDetailsOpen && selectedService ? (selectedService.agentId || selectedService.id) : null}
-        theme={theme}
       />
     </div>
   );

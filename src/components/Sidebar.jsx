@@ -1,129 +1,71 @@
-import React from 'react';
-import { 
-  LayoutDashboard, 
-  Server, 
-  FileText, 
-  Brain, 
-  Settings, 
-  ShieldCheck,
-  FolderOpen,
-  LogOut,
-  User
-} from 'lucide-react';
+import { Brain, FileText, LayoutDashboard, LogOut, Server, Settings } from 'lucide-react';
+import Brand from './Brand';
 
-const Sidebar = ({ activeTab, setActiveTab, theme, currentUser, groups, onLogout, onManageGroups }) => {
-  const isDark = theme === 'dark';
-  
-  const navItems = [
-    { name: 'Dashboard', icon: LayoutDashboard },
-    { name: 'Services', icon: Server },
-    { name: 'System Logs', icon: FileText },
-    { name: 'AI Training', icon: Brain }
-  ];
+const navItems = [
+  { name: 'Dashboard', icon: LayoutDashboard },
+  { name: 'Services', icon: Server },
+  { name: 'System Logs', icon: FileText },
+  { name: 'AI Training', icon: Brain },
+  { name: 'Configuration', icon: Settings },
+];
 
-  const initials = currentUser?.name 
-    ? currentUser.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+export default function Sidebar({ activeTab, setActiveTab, currentUser, groups, onLogout, onManageGroups }) {
+  const initials = currentUser?.name
+    ? currentUser.name.trim().split(/\s+/).map((name) => name[0]).join('').toUpperCase().slice(0, 2)
     : 'U';
 
   return (
-    <aside className={`w-64 border-r flex flex-col transition-all duration-300 shrink-0 ${
-      isDark ? 'bg-dark-card border-dark-border' : 'bg-white border-gray-200'
-    }`}>
-      <div className="p-6">
-        <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 flex items-center justify-center rounded-xl transition-colors ${
-            isDark ? 'bg-emerald-accent/20' : 'bg-google-blue/10'
-          }`}>
-            <ShieldCheck className={`w-6 h-6 ${isDark ? 'text-emerald-accent' : 'text-google-blue'}`} />
-          </div>
-          <div>
-            <h1 className={`text-lg font-bold tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>Vantome</h1>
-            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Self-Healing Grid</p>
-          </div>
-        </div>
+    <aside className="workspace-sidebar flex w-60 shrink-0 flex-col border-r">
+      <div className="flex h-16 shrink-0 items-center justify-center md:justify-start md:px-5" aria-label="Vantome">
+        <Brand />
       </div>
 
-      <nav className="flex-1 px-4 space-y-1 py-4 overflow-y-auto custom-scrollbar">
-        {navItems.map((item) => (
-          <button 
-            key={item.name}
-            onClick={() => setActiveTab(item.name)}
-            className={`w-full flex items-center gap-3 p-3 rounded-xl font-bold transition-all ${
-              activeTab === item.name 
-                ? (isDark ? 'bg-emerald-accent/10 text-emerald-accent border border-emerald-accent/20' : 'bg-google-blue text-white border-google-blue shadow-md shadow-google-blue/20')
-                : (isDark ? 'text-gray-500 hover:text-white hover:bg-gray-800' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100')
-            }`}
+      <nav className="custom-scrollbar flex-1 space-y-1 overflow-y-auto px-2 py-4 md:px-3" aria-label="Workspace">
+        {navItems.map(({ name, icon: Icon }) => (
+          <button
+            key={name}
+            onClick={() => setActiveTab(name)}
+            aria-current={activeTab === name ? 'page' : undefined}
+            aria-label={name}
+            title={name}
+            className="workspace-nav-link"
           >
-            <item.icon className="w-5 h-5" /> {item.name}
+            <Icon className="size-5 shrink-0" aria-hidden="true" />
+            <span>{name}</span>
           </button>
         ))}
-        
-        {/* Groups Section */}
-        {groups && groups.length > 0 && (
-          <>
-            <div className="pt-6 mb-2 px-3 text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center justify-between">
+
+        {groups?.length > 0 && (
+          <div className="hidden pt-5 md:block">
+            <div className="flex items-center justify-between px-3 text-sm font-medium text-app-text-secondary">
               <span>Groups</span>
-              <button 
-                onClick={onManageGroups}
-                className="text-gray-400 hover:text-google-blue transition-colors"
-              >
-                <Settings className="w-3 h-3" />
+              <button onClick={onManageGroups} className="workspace-icon-button" aria-label="Manage groups">
+                <Settings className="size-4" aria-hidden="true" />
               </button>
             </div>
-            {groups.map(g => (
-              <div 
-                key={g.id}
-                className={`flex items-center gap-3 p-2.5 px-3 rounded-lg text-sm transition-all cursor-default ${
-                  isDark ? 'text-gray-400' : 'text-gray-500'
-                }`}
-              >
-                <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: g.color || '#9ca3af' }}></div>
-                <span className="truncate text-xs font-medium">{g.name}</span>
-                <span className="text-[9px] text-gray-400 ml-auto">{g.serviceIds?.length || 0}</span>
+            {groups.map((group) => (
+              <div key={group.id} className="flex items-center gap-3 px-3 py-2 text-sm text-app-text-secondary">
+                <span className="size-2.5 shrink-0 rounded-full" style={{ background: group.color || 'var(--text-secondary)' }} />
+                <span className="flex-1 truncate">{group.name}</span>
+                <span>{group.serviceIds?.length || 0}</span>
               </div>
             ))}
-          </>
+          </div>
         )}
-        
-        <div className="pt-8 mb-2 px-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Settings</div>
-        <button 
-          onClick={() => setActiveTab('Configuration')}
-          className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all font-medium ${
-            activeTab === 'Configuration'
-              ? (isDark ? 'bg-emerald-accent/10 text-emerald-accent border border-emerald-accent/20' : 'bg-google-blue text-white border-google-blue shadow-md shadow-google-blue/20')
-              : (isDark ? 'text-gray-500 hover:text-white hover:bg-gray-800' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100')
-          }`}
-        >
-          <Settings className="w-5 h-5" /> Configuration
-        </button>
       </nav>
 
-      <div className={`p-4 border-t ${isDark ? 'border-dark-border' : 'border-gray-200'}`}>
-        <div className={`flex items-center gap-3 p-3 rounded-xl border ${
-          isDark ? 'bg-gray-900 border-dark-border' : 'bg-gray-50 border-gray-100'
-        }`}>
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-white text-xs transition-colors ${isDark ? 'bg-emerald-600' : 'bg-google-blue'}`}>
-            {initials}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className={`text-xs font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              {currentUser?.name || 'User'}
-            </p>
-            <p className="text-[10px] text-gray-500 truncate">{currentUser?.email || ''}</p>
-          </div>
-          {onLogout && (
-            <button 
-              onClick={onLogout}
-              className="p-1.5 rounded-lg text-gray-400 hover:text-rose-500 hover:bg-rose-500/10 transition-all"
-              title="Sign Out"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-            </button>
-          )}
+      <div className="flex shrink-0 flex-col items-center gap-2 border-t border-app-border px-2 py-4 md:flex-row md:px-3">
+        <span className="preview-badge grid size-8 place-items-center !p-0" data-tone="blue" title={currentUser?.name || 'User'}>{initials}</span>
+        <div className="hidden min-w-0 flex-1 md:block">
+          <p className="truncate text-sm font-medium">{currentUser?.name || 'User'}</p>
+          <p className="truncate text-xs text-app-text-secondary">{currentUser?.email || ''}</p>
         </div>
+        {onLogout && (
+          <button onClick={onLogout} className="workspace-icon-button" title="Sign out" aria-label="Sign out">
+            <LogOut className="size-4" aria-hidden="true" />
+          </button>
+        )}
       </div>
     </aside>
   );
-};
-
-export default Sidebar;
+}

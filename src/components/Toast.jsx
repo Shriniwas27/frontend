@@ -1,16 +1,19 @@
-import React from 'react';
-import { XCircle, Check, Zap } from 'lucide-react';
+import { Check, CircleAlert, Info, X } from 'lucide-react';
 
-const Toast = ({ message, type, onClose }) => (
-  <div className={`fixed bottom-8 right-8 z-[100] p-4 rounded-xl shadow-2xl flex items-center gap-3 border animate-in slide-in-from-right-10 duration-300 ${
-    type === 'success' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-500' : 'bg-google-blue/10 border-google-blue text-google-blue'
-  }`}>
-    <div className={`p-2 rounded-full ${type === 'success' ? 'bg-emerald-500 text-white' : 'bg-google-blue text-white'}`}>
-      {type === 'success' ? <Check className="w-4 h-4" /> : <Zap className="w-4 h-4" />}
+const noticeStyles = {
+  success: { tone: 'green', icon: Check },
+  error: { tone: 'red', icon: CircleAlert },
+  info: { tone: 'blue', icon: Info },
+};
+
+export default function Toast({ message, type, onClose }) {
+  const { tone, icon: Icon } = noticeStyles[type] || noticeStyles.info;
+
+  return (
+    <div className="workspace-notice ui-enter fixed right-3 bottom-20 left-3 z-[100] flex items-center gap-3 rounded-2xl py-2 pr-2 pl-4 sm:right-6 sm:left-auto" data-tone={tone} role={type === 'error' ? 'alert' : 'status'}>
+      <Icon className="size-5 shrink-0" aria-hidden="true" />
+      <span className="flex-1 text-sm font-medium">{message}</span>
+      <button onClick={onClose} className="workspace-icon-button" aria-label="Dismiss notification"><X className="size-4" aria-hidden="true" /></button>
     </div>
-    <span className="font-bold text-sm tracking-tight">{message}</span>
-    <button onClick={onClose} className="ml-4 opacity-50 hover:opacity-100"><XCircle className="w-4 h-4" /></button>
-  </div>
-);
-
-export default Toast;
+  );
+}

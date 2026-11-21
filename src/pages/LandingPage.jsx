@@ -1,257 +1,136 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { 
-  ShieldCheck, 
-  Cpu, 
-  Activity, 
-  Cloud, 
-  ArrowRight, 
-  Zap, 
-  Eye, 
-  Bot,
-  GitBranch,
-  Lock,
-  BarChart3,
-  Layers
+import { Link } from 'react-router-dom';
+import {
+  Activity, Bot, Cloud, Cpu, Download, Layers, Lock, ShieldCheck,
 } from 'lucide-react';
+import Brand from '../components/Brand';
+import androidArtwork from '../assets/vantome-android-hero.webp';
 
-const LandingPage = () => {
-  const navigate = useNavigate();
+const features = [
+  {
+    icon: ShieldCheck,
+    title: 'Self-healing infrastructure',
+    description: 'Detect, diagnose, and resolve microservice failures with AI agents.',
+    tone: 'blue',
+    layout: 'wide',
+    steps: ['Detect', 'Diagnose', 'Resolve'],
+  },
+  { icon: Bot, title: 'Multi-agent orchestration', description: 'Deploy agents across your services and choose how each one operates.', tone: 'green' },
+  { icon: Cloud, title: 'Google Cloud integration', description: 'Connect to Cloud Run, import projects, and manage services from your dashboard.', tone: 'red' },
+  { icon: Activity, title: 'Real-time monitoring', description: 'Track latency, watch live events, and get notified when something goes wrong.', tone: 'yellow', layout: 'wide' },
+  { icon: Layers, title: 'Service groups', description: 'Organize microservices by project or create groups for your own environments.', tone: 'blue' },
+  { icon: Lock, title: 'Granular permissions', description: 'Choose which agents can observe, restart, or scale your services.', tone: 'green' },
+];
 
-  const features = [
-    {
-      icon: ShieldCheck,
-      title: 'Self-Healing Infrastructure',
-      desc: 'AI agents autonomously detect, diagnose, and resolve microservice failures before they impact users.',
-      color: '#1a73e8'
-    },
-    {
-      icon: Bot,
-      title: 'Multi-Agent Orchestration',
-      desc: 'Deploy multiple AI agents across your services with customizable operation modes and permissions.',
-      color: '#34a853'
-    },
-    {
-      icon: Cloud,
-      title: 'Native GCP Integration',
-      desc: 'Seamlessly connect to Google Cloud Run, import projects, and manage services directly from the dashboard.',
-      color: '#ea4335'
-    },
-    {
-      icon: Activity,
-      title: 'Real-Time Monitoring',
-      desc: 'Live event streams, latency tracking, and instant alerts keep you informed of every system event.',
-      color: '#fbbc04'
-    },
-    {
-      icon: Layers,
-      title: 'Smart Grouping',
-      desc: 'Organize microservices by project or create custom environment groups for logical boundaries.',
-      color: '#1a73e8'
-    },
-    {
-      icon: Lock,
-      title: 'Granular Permissions',
-      desc: 'Control exactly what each agent can do – from observation-only to full autonomous restart and scaling.',
-      color: '#34a853'
-    }
-  ];
+const workflow = [
+  { icon: Cloud, title: 'Connect your cloud', description: 'Add credentials for your Google Cloud service account.', tone: 'blue' },
+  { icon: Cpu, title: 'Import services', description: 'Choose a project and import the Cloud Run services you want to monitor.', tone: 'green' },
+  { icon: Bot, title: 'Deploy AI agents', description: 'Set permissions, schedules, and operation modes for your agents.', tone: 'yellow' },
+  { icon: Activity, title: 'Monitor and recover', description: 'Agents watch for incidents and respond in real time.', tone: 'red' },
+];
 
-  const stats = [
-    { value: '99.9%', label: 'Uptime Guarantee' },
-    { value: '<2s', label: 'Incident Response' },
-    { value: '1.2k+', label: 'Auto-Heals / Day' },
-    { value: '24/7', label: 'Continuous Monitoring' }
-  ];
+const androidApkUrl = 'https://storage.googleapis.com/vantomeapk/app-debug.apk';
 
+export default function LandingPage() {
   return (
     <div className="landing-page">
-      {/* Navigation */}
-      <nav className="landing-nav">
+      <header className="landing-nav">
         <div className="landing-nav-inner">
-          <div className="landing-logo">
-            <div className="landing-logo-icon">
-              <ShieldCheck className="w-5 h-5 text-white" />
-            </div>
-            <span className="landing-logo-text">Vantome</span>
-          </div>
-          <div className="landing-nav-links">
+          <Link to="/" aria-label="Vantome home"><Brand /></Link>
+          <nav className="landing-nav-links" aria-label="Main navigation">
             <a href="#features" className="landing-nav-link">Features</a>
-            <a href="#how-it-works" className="landing-nav-link">How it Works</a>
-            <button 
-              onClick={() => navigate('/login')}
-              className="landing-nav-cta"
-            >
-              Sign In <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
+            <a href="#how-it-works" className="landing-nav-link">How it works</a>
+            <a href="#mobile-app" className="landing-nav-link landing-nav-mobile-app">Mobile app</a>
+            <Link to="/login" state={{ authMode: 'login' }} className="brand-button brand-button-outline">Sign in</Link>
+          </nav>
         </div>
-      </nav>
+      </header>
 
-      {/* Hero Section */}
-      <section className="landing-hero">
-        <div className="landing-hero-bg">
-          <div className="landing-hero-grid"></div>
-          <div className="landing-hero-glow"></div>
-        </div>
-
-        <div className="landing-hero-content">
-          <div className="landing-hero-badge">
-            <Zap className="w-3.5 h-3.5" />
-            <span>AI-Powered Infrastructure Management</span>
-          </div>
-
-          <h1 className="landing-hero-title">
-            Self-Healing Microservices.<br />
-            <span className="landing-hero-gradient">Powered by AI Agents.</span>
-          </h1>
-
-          <p className="landing-hero-subtitle">
-            Deploy intelligent agents that monitor, diagnose, and automatically resolve 
-            infrastructure issues across your Google Cloud microservices — in real time.
-          </p>
-
-          <div className="landing-hero-actions">
-            <button 
-              onClick={() => navigate('/login')}
-              className="landing-btn-primary"
-            >
-              Get Started <ArrowRight className="w-5 h-5" />
-            </button>
-            <a href="#features" className="landing-btn-secondary">
-              <Eye className="w-5 h-5" /> Learn More
-            </a>
-          </div>
-
-          {/* Stats */}
-          <div className="landing-stats">
-            {stats.map((stat, i) => (
-              <div key={i} className="landing-stat">
-                <div className="landing-stat-value">{stat.value}</div>
-                <div className="landing-stat-label">{stat.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Hero Visual */}
-        <div className="landing-hero-visual">
-          <div className="landing-dashboard-preview">
-            <div className="landing-preview-header">
-              <div className="landing-preview-dots">
-                <span className="dot-red"></span>
-                <span className="dot-yellow"></span>
-                <span className="dot-green"></span>
-              </div>
-              <span className="landing-preview-title">Vantome Dashboard</span>
-            </div>
-            <div className="landing-preview-body">
-              <div className="landing-preview-sidebar">
-                <div className="preview-nav-item active"><BarChart3 className="w-3 h-3" /> Dashboard</div>
-                <div className="preview-nav-item"><Cpu className="w-3 h-3" /> Services</div>
-                <div className="preview-nav-item"><GitBranch className="w-3 h-3" /> Topology</div>
-              </div>
-              <div className="landing-preview-main">
-                <div className="preview-card green">
-                  <div className="preview-card-dot green"></div>
-                  <span>Auth-Service</span>
-                  <span className="preview-status">Operational</span>
-                </div>
-                <div className="preview-card blue">
-                  <div className="preview-card-dot blue"></div>
-                  <span>Payment-Gate</span>
-                  <span className="preview-status">Healing...</span>
-                </div>
-                <div className="preview-card green">
-                  <div className="preview-card-dot green"></div>
-                  <span>User-Profile</span>
-                  <span className="preview-status">Operational</span>
-                </div>
+      <main>
+        <section className="landing-hero">
+          <div className="landing-hero-inner">
+            <div className="landing-hero-content">
+              <p className="landing-eyebrow"><Cloud aria-hidden="true" /> For Google Cloud Run</p>
+              <h1>Keep your services <span>running.</span></h1>
+              <p className="landing-hero-subtitle">
+                Monitor your Google Cloud microservices and let AI agents detect, diagnose, and resolve incidents in real time.
+              </p>
+              <div className="landing-hero-actions">
+                <Link to="/login" className="brand-button brand-button-primary">Get started</Link>
+                <a href="#features" className="brand-button brand-button-outline">Explore features</a>
               </div>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section id="features" className="landing-features">
-        <div className="landing-section-inner">
-          <div className="landing-section-header">
-            <span className="landing-section-badge">CAPABILITIES</span>
-            <h2 className="landing-section-title">Everything you need for<br />resilient infrastructure</h2>
-            <p className="landing-section-desc">AI-driven tools that work together to keep your microservices healthy and performant.</p>
-          </div>
-
-          <div className="landing-features-grid">
-            {features.map((feature, i) => (
-              <div key={i} className="landing-feature-card" style={{ animationDelay: `${i * 100}ms` }}>
-                <div className="landing-feature-icon" style={{ background: `${feature.color}15`, color: feature.color }}>
-                  <feature.icon className="w-5 h-5" />
+            <section id="mobile-app" className="landing-hero-download" aria-labelledby="android-download-title">
+              <div className="landing-download-content">
+                <div className="landing-download-copy">
+                  <h2 id="android-download-title">Vantome for Android</h2>
+                  <p>Download the APK and open it on your Android device to install Vantome.</p>
                 </div>
-                <h3 className="landing-feature-title">{feature.title}</h3>
-                <p className="landing-feature-desc">{feature.desc}</p>
+                <a href={androidApkUrl} className="brand-button brand-button-primary">
+                  <Download className="size-4 shrink-0" aria-hidden="true" /> Download Android APK
+                </a>
               </div>
-            ))}
+              <img src={androidArtwork} className="landing-download-art" alt="" width="780" height="780" fetchPriority="high" />
+            </section>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* How It Works */}
-      <section id="how-it-works" className="landing-how-it-works">
-        <div className="landing-section-inner">
-          <div className="landing-section-header">
-            <span className="landing-section-badge">WORKFLOW</span>
-            <h2 className="landing-section-title">Get up and running in minutes</h2>
+        <section id="features" className="landing-section">
+          <div className="landing-section-inner">
+            <div className="landing-section-header">
+              <h2>Manage your services in one place</h2>
+              <p>See what’s running, spot issues as they happen, and decide how your agents respond.</p>
+            </div>
+            <div className="landing-features-grid">
+              {features.map(({ icon: Icon, title, description, tone, layout, steps }) => (
+                <article key={title} className="landing-feature" data-tone={tone} data-layout={layout}>
+                  <span className="landing-feature-icon"><Icon aria-hidden="true" /></span>
+                  <h3>{title}</h3>
+                  <p>{description}</p>
+                  {steps && (
+                    <ol className="landing-feature-flow" aria-label="Automatic incident response">
+                      {steps.map(step => <li key={step}>{step}</li>)}
+                    </ol>
+                  )}
+                </article>
+              ))}
+            </div>
           </div>
+        </section>
 
-          <div className="landing-steps">
-            {[
-              { step: '01', title: 'Connect Your Cloud', desc: 'Upload your GCP service account credentials to securely connect your infrastructure.', icon: Cloud },
-              { step: '02', title: 'Import Services', desc: 'Select your GCP project and import Cloud Run microservices with one click.', icon: Cpu },
-              { step: '03', title: 'Deploy AI Agents', desc: 'Assign agents with custom permissions, schedules, and operation modes.', icon: Bot },
-              { step: '04', title: 'Self-Healing Begins', desc: 'Agents monitor, diagnose, and heal issues autonomously in real time.', icon: Activity }
-            ].map((item, i) => (
-              <div key={i} className="landing-step">
-                <div className="landing-step-number">{item.step}</div>
-                <div className="landing-step-icon">
-                  <item.icon className="w-6 h-6" />
-                </div>
-                <h3 className="landing-step-title">{item.title}</h3>
-                <p className="landing-step-desc">{item.desc}</p>
-              </div>
-            ))}
+        <section id="how-it-works" className="landing-section landing-workflow">
+          <div className="landing-section-inner">
+            <div className="landing-section-header">
+              <h2>From setup to self-healing</h2>
+            </div>
+            <ol className="landing-steps">
+              {workflow.map(({ icon: Icon, title, description, tone }) => (
+                <li key={title} data-tone={tone}>
+                  <span className="landing-feature-icon"><Icon aria-hidden="true" /></span>
+                  <h3>{title}</h3>
+                  <p>{description}</p>
+                </li>
+              ))}
+            </ol>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* CTA Section */}
-      <section className="landing-cta">
-        <div className="landing-cta-inner">
-          <h2 className="landing-cta-title">Ready to make your infrastructure self-healing?</h2>
-          <p className="landing-cta-desc">Connect your Google Cloud account and deploy AI agents in minutes.</p>
-          <button 
-            onClick={() => navigate('/login')}
-            className="landing-btn-primary large"
-          >
-            Start Now — It's Free <ArrowRight className="w-5 h-5" />
-          </button>
-        </div>
-      </section>
+        <section className="landing-section landing-cta">
+          <div className="landing-section-inner">
+            <div>
+              <h2>Start monitoring your services</h2>
+              <p>Connect your Google Cloud account and deploy your first agent.</p>
+            </div>
+            <Link to="/login" className="brand-button brand-button-primary">Get started</Link>
+          </div>
+        </section>
+      </main>
 
-      {/* Footer */}
       <footer className="landing-footer">
-        <div className="landing-footer-inner">
-          <div className="landing-logo">
-            <div className="landing-logo-icon small">
-              <ShieldCheck className="w-4 h-4 text-white" />
-            </div>
-            <span className="landing-logo-text small">Vantome</span>
-          </div>
-          <p className="landing-footer-text">© 2026 Vantome. Built for resilient cloud infrastructure.</p>
+        <div className="landing-section-inner">
+          <Link to="/" aria-label="Vantome home"><Brand /></Link>
+          <p>© 2026 Vantome</p>
         </div>
       </footer>
     </div>
   );
-};
-
-export default LandingPage;
+}

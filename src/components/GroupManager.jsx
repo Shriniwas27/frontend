@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { 
   XCircle, 
   Plus, 
-  FolderOpen, 
   Trash2, 
   CheckCircle2,
   Loader2,
@@ -91,28 +90,25 @@ const GroupManager = ({ isOpen, onClose, theme, services, groups, onGroupsChange
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className={`border rounded-2xl w-full max-w-3xl max-h-[85vh] overflow-hidden shadow-2xl flex flex-col ${
-        isDark ? 'bg-dark-card border-dark-border' : 'bg-white border-gray-200'
-      }`}>
+    <div className="dialog-backdrop fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
+      <div className="dialog-surface flex max-h-[85dvh] w-full max-w-3xl flex-col overflow-hidden border" role="dialog" aria-modal="true" aria-labelledby="groups-heading">
         
         {/* Header */}
-        <div className={`p-6 border-b flex justify-between items-center shrink-0 ${isDark ? 'border-dark-border' : 'border-gray-100'}`}>
+        <header className="flex items-center justify-between gap-3 border-b border-app-border p-4 sm:p-6">
           <div>
-            <h2 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              <FolderOpen className="w-5 h-5 inline mr-2" />
-              Manage Groups & Environments
+            <h2 id="groups-heading" className="workspace-title text-2xl">
+              Manage groups
             </h2>
             <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
               Organize microservices into logical groups for easier management.
             </p>
           </div>
-          <button onClick={onClose} className={`p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-gray-800' : 'hover:bg-gray-100'}`}>
+          <button onClick={onClose} className="workspace-icon-button" aria-label="Close groups">
             <XCircle className="w-6 h-6 text-gray-500" />
           </button>
-        </div>
+        </header>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-8">
+        <div className="custom-scrollbar flex-1 space-y-8 overflow-y-auto p-4 sm:p-6">
           
           {/* Create New Group */}
           <div className={`p-6 rounded-xl border ${isDark ? 'bg-gray-900/50 border-dark-border' : 'bg-gray-50 border-gray-200'}`}>
@@ -199,11 +195,9 @@ const GroupManager = ({ isOpen, onClose, theme, services, groups, onGroupsChange
             <button
               onClick={handleCreateGroup}
               disabled={!newGroupName.trim() || isCreating}
-              className={`w-full py-2.5 rounded-lg font-bold text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${
-                isDark ? 'bg-emerald-accent text-dark-bg hover:scale-[1.01]' : 'bg-google-blue text-white hover:scale-[1.01]'
-              }`}
+              className="brand-button brand-button-primary w-full"
             >
-              {isCreating ? <><Loader2 className="w-4 h-4 animate-spin" /> Creating...</> : <><Plus className="w-4 h-4" /> Create Group</>}
+              {isCreating ? <><Loader2 className="w-4 h-4 animate-spin" /> Creating…</> : <><Plus className="w-4 h-4" /> Create group</>}
             </button>
           </div>
 

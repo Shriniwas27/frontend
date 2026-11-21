@@ -1,24 +1,23 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
-  ShieldCheck,
-  ArrowRight,
   Upload,
   User,
   Mail,
   Phone,
   Loader2,
-  ChevronLeft,
   Cloud,
   CheckCircle2,
   Lock,
   KeyRound
 } from 'lucide-react';
 import { register, login, createAccount, clearAuthSession, storeAuthSession } from '../api';
+import Brand from '../components/Brand';
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  const [authMode, setAuthMode] = useState('register'); // 'register' | 'login'
+  const { state } = useLocation();
+  const [authMode, setAuthMode] = useState(state?.authMode === 'login' || state?.from ? 'login' : 'register');
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
@@ -132,40 +131,17 @@ const LoginPage = () => {
   const isStep2Valid = credData.rawFileContent;
 
   return (
-    <div className="login-page">
-      {/* Background */}
-      <div className="login-bg">
-        <div className="login-bg-pattern"></div>
+    <main className="login-page">
+      <div className="w-full max-w-[57rem]">
+        <Link to="/" className="brand-button brand-button-outline">Back to home</Link>
       </div>
 
-      {/* Back to Landing */}
-      <button onClick={() => navigate('/')} className="login-back-btn">
-        <ChevronLeft className="w-4 h-4" /> Back to Home
-      </button>
-
       <div className="login-container">
-        {/* Left Panel - Branding */}
         <div className="login-brand-panel">
-          <div className="login-brand-content">
-            <div className="login-brand-logo">
-              <ShieldCheck className="w-8 h-8 text-white" />
-            </div>
-            <h1 className="login-brand-title">Vantome</h1>
-            <p className="login-brand-subtitle">Self-Healing Infrastructure Platform</p>
-
-            <div className="login-brand-features">
-              {[
-                'AI-powered incident response',
-                'Multi-project GCP management',
-                'Real-time service monitoring',
-                'Autonomous healing agents'
-              ].map((f, i) => (
-                <div key={i} className="login-brand-feature">
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>{f}</span>
-                </div>
-              ))}
-            </div>
+          <div>
+            <Brand />
+            <p className="login-brand-title">Cloud service monitoring</p>
+            <p className="login-brand-subtitle">Track service health and manage your AI agents in one place.</p>
           </div>
         </div>
 
@@ -173,7 +149,8 @@ const LoginPage = () => {
         <div className="login-form-panel">
           <div className="login-form-content">
             {/* Step indicator */}
-            <div className="login-steps-indicator">
+            {authMode === 'register' && <div className="login-steps-indicator">
+              <span className="sr-only">Step {step} of 2</span>
               <div className={`login-step-dot ${step >= 1 ? 'active' : ''}`}>
                 <User className="w-3.5 h-3.5" />
               </div>
@@ -181,29 +158,31 @@ const LoginPage = () => {
               <div className={`login-step-dot ${step >= 2 ? 'active' : ''}`}>
                 <Cloud className="w-3.5 h-3.5" />
               </div>
-            </div>
+            </div>}
 
             {step === 1 && (
               <div className="login-form-step">
                 <div className="login-form-header">
-                  <h2 className="login-form-title">
-                    {authMode === 'register' ? 'Create your account' : 'Welcome back'}
-                  </h2>
+                  <h1 className="login-form-title">
+                    {authMode === 'register' ? 'Create your account' : 'Sign in'}
+                  </h1>
                   <p className="login-form-desc">
                     {authMode === 'register'
-                      ? 'Tell us about yourself to personalize your experience.'
-                      : 'Sign in with your credentials to access your dashboard.'}
+                      ? 'Enter your details to get started with Vantome.'
+                      : 'Use your Vantome account to open the dashboard.'}
                   </p>
                 </div>
 
                 <div className="login-form-fields">
                   {authMode === 'register' && (
                     <div className="login-field">
-                      <label className="login-label">Full Name</label>
+                      <label htmlFor="signup-name" className="login-label">Full name</label>
                       <div className="login-input-wrapper">
                         <User className="login-input-icon" />
                         <input
+                          id="signup-name"
                           type="text"
+                          autoComplete="name"
                           value={userData.name}
                           onChange={(e) => updateUser('name', e.target.value)}
                           placeholder="Josh Doe"
@@ -214,11 +193,13 @@ const LoginPage = () => {
                   )}
 
                   <div className="login-field">
-                    <label className="login-label">Email Address</label>
+                    <label htmlFor="login-email" className="login-label">Email address</label>
                     <div className="login-input-wrapper">
                       <Mail className="login-input-icon" />
                       <input
+                        id="login-email"
                         type="email"
+                        autoComplete="email"
                         value={userData.email}
                         onChange={(e) => updateUser('email', e.target.value)}
                         placeholder="josh@example.com"
@@ -228,11 +209,13 @@ const LoginPage = () => {
                   </div>
 
                   <div className="login-field">
-                    <label className="login-label">Password</label>
+                    <label htmlFor="login-password" className="login-label">Password</label>
                     <div className="login-input-wrapper">
                       <KeyRound className="login-input-icon" />
                       <input
+                        id="login-password"
                         type="password"
+                        autoComplete={authMode === 'register' ? 'new-password' : 'current-password'}
                         value={userData.password}
                         onChange={(e) => updateUser('password', e.target.value)}
                         placeholder="••••••••"
@@ -243,11 +226,13 @@ const LoginPage = () => {
 
                   {authMode === 'register' && (
                     <div className="login-field">
-                      <label className="login-label">Contact Number (Optional)</label>
+                      <label htmlFor="signup-phone" className="login-label">Phone number (optional)</label>
                       <div className="login-input-wrapper">
                         <Phone className="login-input-icon" />
                         <input
+                          id="signup-phone"
                           type="tel"
+                          autoComplete="tel"
                           value={userData.contactNumber}
                           onChange={(e) => updateUser('contactNumber', e.target.value)}
                           placeholder="+91 98765 43210"
@@ -258,25 +243,25 @@ const LoginPage = () => {
                   )}
                 </div>
 
-                {error && <div className="login-error">⚠ {error}</div>}
+                {error && <div className="login-error" role="alert">{error}</div>}
 
                 <button
                   onClick={handleAuth}
                   disabled={!isStep1Valid || isSubmitting}
-                  className="login-btn-next"
+                  className="brand-button brand-button-primary login-btn-next"
                 >
                   {isSubmitting ? (
                     <><Loader2 className="w-4 h-4 animate-spin" /> Verifying...</>
                   ) : (
-                    authMode === 'register' ? <>Continue <ArrowRight className="w-4 h-4" /></> : <>Sign In <ArrowRight className="w-4 h-4" /></>
+                    authMode === 'register' ? 'Continue' : 'Sign in'
                   )}
                 </button>
 
                 <div className="login-switch-mode">
                   {authMode === 'register' ? (
-                    <p>Already have an account? <button onClick={() => { clearAuthSession(); setAuthMode('login'); setError(null); }}>Sign In</button></p>
+                    <p>Already have an account? <button onClick={() => { clearAuthSession(); setAuthMode('login'); setError(null); }}>Sign in</button></p>
                   ) : (
-                    <p>New to Vantome? <button onClick={() => { clearAuthSession(); setAuthMode('register'); setError(null); }}>Create Account</button></p>
+                    <p>New to Vantome? <button onClick={() => { clearAuthSession(); setAuthMode('register'); setError(null); }}>Create an account</button></p>
                   )}
                 </div>
               </div>
@@ -285,16 +270,17 @@ const LoginPage = () => {
             {step === 2 && (
               <div className="login-form-step">
                 <div className="login-form-header">
-                  <h2 className="login-form-title">Connect your cloud</h2>
-                  <p className="login-form-desc">Upload your GCP service account key to get started.</p>
+                  <h1 className="login-form-title">Connect your cloud</h1>
+                  <p className="login-form-desc">Add your Google Cloud service account key to continue.</p>
                 </div>
 
                 <div className="login-form-fields">
                   <div className="login-field">
-                    <label className="login-label">Account Name</label>
+                    <label htmlFor="cloud-account-name" className="login-label">Account name</label>
                     <div className="login-input-wrapper">
                       <Lock className="login-input-icon" />
                       <input
+                        id="cloud-account-name"
                         type="text"
                         value={credData.credentialName}
                         onChange={(e) => updateCred('credentialName', e.target.value)}
@@ -305,37 +291,34 @@ const LoginPage = () => {
                   </div>
 
                   <div className="login-field">
-                    <label className="login-label">Service Account Key (JSON)</label>
-                    <div
-                      onClick={() => document.getElementById('login-json-upload').click()}
-                      className={`login-upload-zone ${credData.rawFileContent ? 'has-file' : ''}`}
-                    >
+                    <span className="login-label" id="cloud-key-label">Service account key (JSON)</span>
+                    <label className={`login-upload-zone ${credData.rawFileContent ? 'has-file' : ''}`}>
                       {credData.rawFileContent ? (
                         <>
-                          <CheckCircle2 className="w-8 h-8 text-emerald-500" />
-                          <p className="login-upload-text success">Credentials loaded successfully</p>
-                          <p className="login-upload-hint">Click to replace file</p>
+                          <CheckCircle2 className="size-7" aria-hidden="true" />
+                          <span className="login-upload-text">Credentials added</span>
+                          <span className="login-upload-hint">Choose a different file</span>
                         </>
                       ) : (
                         <>
-                          <Upload className="w-8 h-8 text-gray-400" />
-                          <p className="login-upload-text">Drop your credentials.json here or click to browse</p>
-                          <p className="login-upload-hint">Supports .json service account keys</p>
+                          <Upload className="size-7" aria-hidden="true" />
+                          <span className="login-upload-text">Choose a JSON file</span>
                         </>
                       )}
                       <input
-                        id="login-json-upload"
                         type="file"
-                        className="hidden"
+                        className="sr-only"
+                        aria-labelledby="cloud-key-label"
                         accept=".json"
                         onChange={handleFileUpload}
                       />
-                    </div>
+                    </label>
                   </div>
 
                   <div className="login-field">
-                    <label className="login-label">Account Details</label>
+                    <label htmlFor="cloud-account-details" className="login-label">Account details</label>
                     <textarea
+                      id="cloud-account-details"
                       value={credData.accountDetails}
                       onChange={(e) => updateCred('accountDetails', e.target.value)}
                       placeholder="Production account for project X, owner, notes..."
@@ -345,8 +328,9 @@ const LoginPage = () => {
                   </div>
 
                   <div className="login-field">
-                    <label className="login-label">Or paste JSON content</label>
+                    <label htmlFor="cloud-key-json" className="login-label">Or paste JSON content</label>
                     <textarea
+                      id="cloud-key-json"
                       value={credData.rawFileContent}
                       onChange={(e) => updateCred('rawFileContent', e.target.value)}
                       placeholder='{ "type": "service_account", "project_id": "...", ... }'
@@ -356,21 +340,21 @@ const LoginPage = () => {
                   </div>
                 </div>
 
-                {error && <div className="login-error">⚠ {error}</div>}
+                {error && <div className="login-error" role="alert">{error}</div>}
 
                 <div className="login-form-actions">
-                  <button onClick={() => setStep(1)} className="login-btn-back">
-                    <ChevronLeft className="w-4 h-4" /> Back
+                  <button onClick={() => setStep(1)} className="brand-button brand-button-outline">
+                    Back
                   </button>
                   <button
                     onClick={handleFinalSubmit}
                     disabled={!isStep2Valid || isSubmitting}
-                    className="login-btn-next"
+                    className="brand-button brand-button-primary login-btn-next"
                   >
                     {isSubmitting ? (
                       <><Loader2 className="w-4 h-4 animate-spin" /> Finalizing...</>
                     ) : (
-                      <>Complete Setup <ArrowRight className="w-4 h-4" /></>
+                      'Complete setup'
                     )}
                   </button>
                 </div>
@@ -379,7 +363,7 @@ const LoginPage = () => {
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 };
 

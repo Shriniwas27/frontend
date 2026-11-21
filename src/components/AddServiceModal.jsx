@@ -3,7 +3,6 @@ import { registerService, getGlobalGcpProjects, getGlobalGcpServices } from '../
 import SelfHealingGitHubStep from './SelfHealingGitHubStep';
 import { 
   XCircle, 
-  ChevronLeft, 
   Zap, 
   Clock, 
   Plus, 
@@ -233,30 +232,28 @@ const AddServiceModal = ({ isOpen, onClose, theme, onSuccess }) => {
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className={`border rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl transition-all ${
-        isDark ? 'bg-dark-card border-dark-border' : 'bg-white border-gray-200'
-      }`}>
+    <div className="dialog-backdrop fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
+      <div className="dialog-surface flex max-h-[calc(100dvh-1.5rem)] w-full max-w-2xl flex-col overflow-hidden border" role="dialog" aria-modal="true" aria-labelledby="add-agent-heading">
 
         {/* Header */}
-        <div className={`p-6 border-b flex justify-between items-center ${isDark ? 'border-dark-border' : 'border-gray-100'}`}>
+        <header className="flex items-center justify-between gap-3 border-b border-app-border p-4 sm:p-6">
           <div>
-            <h2 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Register AI Health Agent</h2>
-            <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Scalable self-healing infrastructure configuration</p>
+            <h2 id="add-agent-heading" className="workspace-title text-2xl">Register an AI health agent</h2>
+            <p className="mt-1 text-sm text-app-text-secondary">Choose a service and configure how the agent responds.</p>
           </div>
-          <button onClick={onClose} className={`p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-gray-800' : 'hover:bg-gray-100'}`}>
+          <button onClick={onClose} className="workspace-icon-button" aria-label="Close agent setup">
             <XCircle className="w-6 h-6 text-gray-500" />
           </button>
-        </div>
+        </header>
 
         {/* Step Indicator */}
-        <div className={`flex items-center justify-between p-3 ${isDark ? 'bg-gray-900/50' : 'bg-gray-50'}`}>
+        <div className={`flex shrink-0 items-center justify-between p-3 ${isDark ? 'bg-gray-900/50' : 'bg-gray-50'}`}>
           {STEPS.map((label, i) => {
             const s = i + 1;
             return (
               <div key={s} className="flex items-center gap-2 cursor-pointer" onClick={() => s < step && setStep(s)}>
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm transition-all ${
-                  step === s ? (isDark ? 'bg-emerald-accent text-dark-bg' : 'bg-google-blue text-white') :
+                  step === s ? 'bg-google-blue text-[var(--on-primary)]' :
                   step > s ? (isDark ? 'bg-emerald-accent/20 text-emerald-accent' : 'bg-green-100 text-green-600') :
                   (isDark ? 'bg-gray-800 text-gray-400' : 'bg-gray-200 text-gray-400')
                 }`}>{s}</div>
@@ -270,7 +267,7 @@ const AddServiceModal = ({ isOpen, onClose, theme, onSuccess }) => {
         </div>
 
         {/* Body */}
-        <div className="p-8 min-h-92.5 overflow-y-auto">
+        <div className="custom-scrollbar min-h-0 overflow-y-auto p-4 sm:p-8">
 
           {/* Step 1: Cloud Target (Replaced Credentials) */}
           {step === 1 && (
@@ -570,15 +567,13 @@ const AddServiceModal = ({ isOpen, onClose, theme, onSuccess }) => {
         </div>
 
         {/* Footer */}
-        <div className={`p-5 border-t flex justify-between items-center ${isDark ? 'border-dark-border bg-gray-900/50' : 'border-gray-100 bg-gray-50'}`}>
+        <footer className="flex items-center justify-between gap-2 border-t border-app-border p-3 sm:p-5">
           <button
             disabled={step === 1}
             onClick={() => setStep(s => s - 1)}
-            className={`flex items-center gap-2 px-5 py-2 rounded-lg font-bold text-sm transition-all ${
-              step === 1 ? 'opacity-30 cursor-not-allowed text-gray-500' : (isDark ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-900')
-            }`}
+            className="brand-button brand-button-outline"
           >
-            <ChevronLeft className="w-4 h-4" /> PREVIOUS
+            Back
           </button>
 
           <div className="text-xs text-gray-500 font-mono">{step} / {STEPS.length}</div>
@@ -590,13 +585,11 @@ const AddServiceModal = ({ isOpen, onClose, theme, onSuccess }) => {
               (step === 4 && selfHealingEnabled && !githubAuthorized) ||
               (step === 1 && (!formData.gcpProject || !formData.microserviceName))
             }
-            className={`flex items-center gap-2 px-8 py-2.5 rounded-lg font-bold text-sm hover:scale-105 active:scale-95 transition-all shadow-lg disabled:opacity-60 disabled:cursor-not-allowed disabled:scale-100 ${
-              isDark ? 'bg-emerald-accent text-dark-bg shadow-emerald-accent/20' : 'bg-google-blue text-white shadow-google-blue/20'
-            }`}
+            className="brand-button brand-button-primary"
           >
-            {isSubmitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Initializing...</> : step === 6 ? 'INITIALIZE SYSTEM' : 'NEXT STEP →'}
+            {isSubmitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Registering…</> : step === 6 ? 'Register agent' : 'Next'}
           </button>
-        </div>
+        </footer>
       </div>
     </div>
   );

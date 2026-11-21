@@ -527,7 +527,7 @@ export default function AgentDetailsModal({ isOpen, onClose, onEditConfiguration
   if (!isOpen || !service) return null;
 
   return (
-    <div className={`relative w-full h-full rounded-2xl border overflow-hidden flex flex-col ui-enter ui-soft-transition ${isDark ? 'bg-dark-card border-dark-border' : 'bg-white border-gray-200'}`}>
+    <div className="ui-card-soft ui-enter relative flex h-full w-full flex-col overflow-hidden rounded-2xl">
         {quickAlert && (
           <div className="fixed top-5 right-5 z-50 pointer-events-none">
             <div className={`ui-quick-alert px-3 py-2 rounded-lg border shadow-lg text-xs font-semibold backdrop-blur-sm ${quickAlert.kind === 'error'
@@ -537,9 +537,9 @@ export default function AgentDetailsModal({ isOpen, onClose, onEditConfiguration
             </div>
           </div>
         )}
-        <div className={`px-6 py-4 border-b flex items-center justify-between ${isDark ? 'border-dark-border bg-gray-900/40' : 'border-gray-200 bg-gray-50'}`}>
+        <header className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-app-border bg-app-card px-3 py-4 sm:px-6">
           <div>
-            <h2 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Agent Detailed View</h2>
+            <h1 className="workspace-title text-2xl">Agent details</h1>
             <p className={`text-sm flex flex-wrap items-center gap-2 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
               <span>{service.agentName || 'Agent'} · {service.microserviceName || 'Service'} · {service.gcpProject || 'Project'}</span>
               {repoUrl && (
@@ -562,7 +562,7 @@ export default function AgentDetailsModal({ isOpen, onClose, onEditConfiguration
               )}
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2">
             {deployedUrl && (
               <a
                 href={deployedUrl}
@@ -598,20 +598,21 @@ export default function AgentDetailsModal({ isOpen, onClose, onEditConfiguration
             )}
             <button
               onClick={onEditConfiguration}
-              className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${isDark ? 'bg-emerald-accent text-dark-bg' : 'bg-google-blue text-white'}`}
+              className="brand-button brand-button-primary"
             >
-              <Settings2 className="w-4 h-4" /> Edit Configuration
+              <Settings2 className="w-4 h-4" /> Edit configuration
             </button>
             <button
               onClick={onClose}
-              className={`p-2 rounded-lg ${isDark ? 'hover:bg-gray-800' : 'hover:bg-gray-100'}`}
+              className="workspace-icon-button"
+              aria-label="Close agent details"
             >
               <XCircle className="w-6 h-6 text-gray-500" />
             </button>
           </div>
-        </div>
+        </header>
 
-        <div className="flex-1 overflow-hidden">
+        <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto lg:overflow-hidden">
           <div className="h-full flex flex-col lg:flex-row">
             <div className={`w-full lg:w-2/3 border-r ${isDark ? 'border-dark-border bg-gray-900/20' : 'border-gray-200 bg-gray-50/60'}`}>
               <div className="h-full flex flex-col xl:flex-row">
@@ -963,7 +964,7 @@ export default function AgentDetailsModal({ isOpen, onClose, onEditConfiguration
                         ? (isDark ? 'border-sky-400 bg-sky-950/20' : 'border-sky-400 bg-sky-50')
                         : isResourceUpdate
                         ? (isDark ? 'border-emerald-400 bg-emerald-950/20' : 'border-emerald-400 bg-emerald-50')
-                        : (isDark ? 'border-violet-400 bg-violet-950/20' : 'border-violet-400 bg-violet-50')} ${isAnalysis ? 'ui-suggestion-flash suggestion-rotating-border' : ''}`}>
+                        : (isDark ? 'border-violet-400 bg-violet-950/20' : 'border-violet-400 bg-violet-50')} ${isAnalysis ? 'ui-suggestion-flash' : ''}`}>
                         <button
                           type="button"
                           onClick={() => copyLogText(logKey, entry)}

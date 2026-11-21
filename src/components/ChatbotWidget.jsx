@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Mic, Send, X } from 'lucide-react';
 import { getWebSocketBaseUrl } from '../api';
 
 const WS_BASE_URL = `${getWebSocketBaseUrl()}/vantome-agent/`;
@@ -30,13 +31,12 @@ function downsampleBuffer(buffer, inputSampleRate, outputSampleRate = 16000) {
   return result;
 }
 
-export default function ChatbotWidget({ scope = 'dashboard', agentId = null, theme = 'light' }) {
+export default function ChatbotWidget({ scope = 'dashboard', agentId = null }) {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState('Disconnected');
   const [isAiSpeaking, setIsAiSpeaking] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const [messages, setMessages] = useState([]);
-  const isDark = theme === 'dark';
 
   const webSocket = useRef(null);
   const mediaStream = useRef(null);
@@ -463,15 +463,9 @@ export default function ChatbotWidget({ scope = 'dashboard', agentId = null, the
         <button
           onClick={openSupport}
           aria-label="Open AI voice assistant"
-          className={`fixed bottom-7 right-7 z-50 w-14 h-14 rounded-full text-white flex items-center justify-center transition-all duration-200 hover:scale-105 ${isDark
-            ? 'bg-emerald-accent shadow-[0_0_0_3px_rgba(16,185,129,0.28),0_12px_26px_rgba(0,0,0,0.5)] hover:shadow-[0_0_0_4px_rgba(16,185,129,0.36),0_16px_34px_rgba(0,0,0,0.6)]'
-            : 'bg-google-blue shadow-[0_10px_24px_rgba(26,115,232,0.35)] hover:shadow-[0_14px_30px_rgba(26,115,232,0.45)]'}`}
+          className="brand-button brand-button-primary fixed right-4 bottom-4 z-50 size-14 !rounded-2xl !p-0 shadow-lg sm:right-7 sm:bottom-7"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
-            <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-            <line x1="12" x2="12" y1="19" y2="22" />
-          </svg>
+          <Mic className="size-6" aria-hidden="true" />
         </button>
       )}
 
@@ -481,37 +475,30 @@ export default function ChatbotWidget({ scope = 'dashboard', agentId = null, the
           onClick={(e) => e.target === e.currentTarget && closeModal()}
         >
           <div
-            className="bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom border border-gray-200"
-            style={{ width: 340, height: 550 }}
+            className="assistant-panel dialog-surface ui-enter flex flex-col overflow-hidden border"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="assistant-heading"
           >
-            <div className="bg-google-blue text-white px-5 py-4 font-semibold flex justify-between items-center text-[15px]">
-              <div className="flex items-center gap-2">
-                <span className="text-xl">AI</span>
-                <span>AI Voice Agent</span>
-              </div>
+            <header className="flex items-center justify-between gap-2 border-b border-app-border bg-app-bg px-4 py-2">
+              <h2 id="assistant-heading" className="workspace-section-title">Vantome assistant</h2>
               <button
                 onClick={closeModal}
-                className="bg-white/20 hover:bg-white/30 text-white w-7 h-7 rounded-full flex items-center justify-center transition-colors"
+                className="workspace-icon-button"
+                aria-label="Close assistant"
               >
-                X
+                <X className="size-5" aria-hidden="true" />
               </button>
-            </div>
+            </header>
 
-            <div className="flex-1 flex flex-col relative text-gray-800 overflow-hidden bg-white">
+            <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-app-card text-app-text-primary">
               <video ref={videoRef} playsInline muted className="hidden" />
               <canvas ref={canvasRef} className="hidden" />
 
               <div className="flex-none flex flex-col items-center pt-8 pb-4">
                 <div
-                  className="rounded-full flex items-center justify-center text-4xl transition-all duration-300 relative select-none"
-                  style={{
-                    width: 90,
-                    height: 90,
-                    background: isAiSpeaking ? 'rgba(26,115,232,0.22)' : 'rgba(26,115,232,0.1)',
-                    boxShadow: isAiSpeaking
-                      ? '0 0 0 12px rgba(26,115,232,0.2), 0 0 0 24px rgba(26,115,232,0.08)'
-                      : '0 0 0 8px rgba(26,115,232,0.05)',
-                  }}
+                  className="assistant-avatar grid select-none place-items-center rounded-full transition-shadow"
+                  data-speaking={isAiSpeaking}
                 >
                   {isAiSpeaking ? (
                     <div className="flex items-center gap-1.5 h-8">
@@ -522,11 +509,10 @@ export default function ChatbotWidget({ scope = 'dashboard', agentId = null, the
                       <span className="w-1.5 bg-google-blue rounded-full animate-bounce" style={{ height: '16px', animationDuration: '0.6s', animationDelay: '0.15s' }}></span>
                     </div>
                   ) : (
-                    <span className="font-bold text-google-blue">AI</span>
+                    <Mic className="size-8" aria-hidden="true" />
                   )}
                 </div>
-                <h3 className="mt-6 font-semibold text-lg text-gray-900">Vantome Assistant</h3>
-                <div className="flex items-center gap-2 mt-1">
+                <div className="mt-4 flex items-center gap-2">
                   {isAiSpeaking && <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>}
                   <p className={`text-sm ${isAiSpeaking ? 'text-google-blue font-semibold' : 'opacity-70'}`}>
                     {isAiSpeaking ? '🔊 Speaking...' : connectionStatus}
@@ -539,8 +525,8 @@ export default function ChatbotWidget({ scope = 'dashboard', agentId = null, the
                   <div
                     key={`${index}-${msg.isUser ? 'u' : 'a'}`}
                     className={`px-3 py-2 rounded-xl text-[13px] max-w-[85%] shadow-sm ${msg.isUser
-                      ? 'self-end bg-google-blue text-white ml-4'
-                      : 'self-start bg-gray-100 text-gray-700 mr-4'}`}
+                      ? 'ml-4 self-end bg-google-blue text-[var(--on-primary)]'
+                      : 'mr-4 self-start bg-app-bg text-app-text-primary'}`}
                   >
                     {msg.text}
                   </div>
@@ -549,19 +535,21 @@ export default function ChatbotWidget({ scope = 'dashboard', agentId = null, the
               </div>
 
               <div className="p-4 flex flex-col gap-3">
-                <div className="flex bg-gray-100 rounded-full p-1 pl-4 items-center border border-gray-200">
+                <div className="workspace-search flex items-center gap-2 rounded-full p-1 pl-4">
                   <input
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                     placeholder="Type a message..."
-                    className="flex-1 bg-transparent border-none outline-none text-gray-800 text-[14px] placeholder:text-gray-500"
+                    aria-label="Message"
+                    className="min-w-0 flex-1 bg-transparent text-sm text-app-text-primary placeholder:text-app-text-secondary"
                   />
                   <button
                     onClick={handleSend}
-                    className="bg-google-blue text-white w-8 h-8 rounded-full flex items-center justify-center font-bold transition-transform hover:scale-105"
+                    className="workspace-icon-button bg-google-blue !text-[var(--on-primary)] hover:!bg-[var(--primary-hover)]"
+                    aria-label="Send message"
                   >
-                    ↑
+                    <Send className="size-4" aria-hidden="true" />
                   </button>
                 </div>
 
