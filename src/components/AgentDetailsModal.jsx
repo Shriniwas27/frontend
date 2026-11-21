@@ -14,8 +14,10 @@ import {
   Sparkles,
   Settings2,
   XCircle,
+  GitBranch,
+  ExternalLink,
 } from 'lucide-react';
-import { getAgentLogsStreamUrl, getAgentState } from '../api';
+import { getAgentLogsStreamUrl, getAgentState, triggerSelfHeal } from '../api';
 
 const isErrorSeverity = (value) => {
   const normalized = String(value || '').toLowerCase();
@@ -126,6 +128,42 @@ export default function AgentDetailsModal({ isOpen, onClose, onEditConfiguration
   const lastAlertRef = useRef({ kind: null, at: 0 });
 
   const agentLookupId = service?.agentId || service?.id;
+  const linkedRepo = stateData?.github_repo || service?.githubRepo || (service?.repoUrl ? { repo_url: service.repoUrl } : null);
+  const repoUrl = linkedRepo?.repo_url || service?.repoUrl || '';
+  const deployedUrl = stateData?.deployed_url || service?.deployedUrl || '';
+  const consoleUrl = stateData?.console_url || service?.consoleUrl || (service?.gcpProject && service?.microserviceName ? `https://console.cloud.google.com/run/detail/${service.gcpLocation || 'asia-south1'}/${service.microserviceName.split('/').pop()}/metrics?project=${service.gcpProject}` : '');
+
+  const [isSelfHealing, setIsSelfHealing] = useState(false);
+  const [selfHealResult, setSelfHealResult] = useState(null);
+
+  const handleTriggerSelfHeal = async () => {
+    if (!agentLookupId || isSelfHealing) return;
+    try {
+      setIsSelfHealing(true);
+      const res = await triggerSelfHeal(agentLookupId);
+      const resultData = res.data?.data;
+      const summary = resultData?.fix_result?.summary || resultData?.error || 'Self-healing triggered';
+      setSelfHealResult(resultData);
+      showQuickAlert('suggestion');
+      if (onNotification) {
+        onNotification({
+          type: 'success',
+          message: `Self-healing: ${summary}`
+        });
+      }
+    } catch (err) {
+      const msg = err?.response?.data?.detail || err?.message || 'Self-healing request failed';
+      showQuickAlert('error');
+      if (onNotification) {
+        onNotification({
+          type: 'error',
+          message: msg
+        });
+      }
+    } finally {
+      setIsSelfHealing(false);
+    }
+  };
 
   const fetchState = async (isManual = false) => {
     if (!agentLookupId) return;
@@ -502,11 +540,62 @@ export default function AgentDetailsModal({ isOpen, onClose, onEditConfiguration
         <div className={`px-6 py-4 border-b flex items-center justify-between ${isDark ? 'border-dark-border bg-gray-900/40' : 'border-gray-200 bg-gray-50'}`}>
           <div>
             <h2 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Agent Detailed View</h2>
-            <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-              {service.agentName || 'Agent'} · {service.microserviceName || 'Service'} · {service.gcpProject || 'Project'}
+            <p className={`text-sm flex flex-wrap items-center gap-2 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+              <span>{service.agentName || 'Agent'} · {service.microserviceName || 'Service'} · {service.gcpProject || 'Project'}</span>
+              {repoUrl && (
+                <a
+                  href={repoUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-mono transition-colors ${
+                    isDark ? 'bg-gray-800 text-emerald-accent hover:bg-gray-700' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                  }`}
+                  title="Open GitHub Repository"
+                >
+                  <GitBranch className="w-3.5 h-3.5" />
+                  <span>{linkedRepo?.repo || repoUrl.replace('https://github.com/', '')}</span>
+                  {linkedRepo?.branch && (
+                    <span className="text-[10px] opacity-75 font-sans">({linkedRepo.branch})</span>
+                  )}
+                  <ExternalLink className="w-3 h-3 opacity-60" />
+                </a>
+              )}
             </p>
           </div>
           <div className="flex items-center gap-3">
+            {deployedUrl && (
+              <a
+                href={deployedUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`px-3 py-2 rounded-lg text-sm font-bold flex items-center gap-1.5 transition-all ${
+                  isDark
+                    ? 'bg-emerald-950/60 border border-emerald-500/50 text-emerald-400 hover:bg-emerald-900/60 hover:text-emerald-300'
+                    : 'bg-emerald-50 border border-emerald-300 text-emerald-700 hover:bg-emerald-100'
+                }`}
+                title="Open deployed live service in new tab"
+              >
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span>Visit Live App</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            )}
+            {consoleUrl && (
+              <a
+                href={consoleUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`px-3 py-2 rounded-lg text-sm font-bold flex items-center gap-1.5 transition-all ${
+                  isDark
+                    ? 'bg-gray-800 text-gray-200 hover:bg-gray-700'
+                    : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-100'
+                }`}
+                title="Open Google Cloud Console for this service"
+              >
+                <span>GCP Console</span>
+                <ExternalLink className="w-3.5 h-3.5 opacity-70" />
+              </a>
+            )}
             <button
               onClick={onEditConfiguration}
               className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${isDark ? 'bg-emerald-accent text-dark-bg' : 'bg-google-blue text-white'}`}
@@ -638,6 +727,53 @@ export default function AgentDetailsModal({ isOpen, onClose, onEditConfiguration
                           <span className={isDark ? 'text-gray-400' : 'text-gray-500'}>Service</span>
                           <span className={isDark ? 'text-white' : 'text-gray-900'}>{stateData?.service || service.microserviceName || 'N/A'}</span>
                         </div>
+                        {repoUrl && (
+                          <div className="flex items-center justify-between gap-3">
+                            <span className={isDark ? 'text-gray-400' : 'text-gray-500'}>Repository</span>
+                            <a
+                              href={repoUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={`font-mono inline-flex items-center gap-1 text-xs hover:underline ${isDark ? 'text-emerald-accent' : 'text-google-blue'}`}
+                              title="Open GitHub Repository"
+                            >
+                              <GitBranch className="w-3 h-3" />
+                              <span className="truncate max-w-[140px]">{linkedRepo?.owner && linkedRepo?.repo ? `${linkedRepo.owner}/${linkedRepo.repo}` : repoUrl.replace('https://github.com/', '')}</span>
+                              <ExternalLink className="w-2.5 h-2.5 opacity-70" />
+                            </a>
+                          </div>
+                        )}
+                        {deployedUrl && (
+                          <div className="flex items-center justify-between gap-3">
+                            <span className={isDark ? 'text-gray-400' : 'text-gray-500'}>Live App</span>
+                            <a
+                              href={deployedUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={`font-mono inline-flex items-center gap-1 text-xs hover:underline ${isDark ? 'text-emerald-accent' : 'text-google-blue'}`}
+                              title="Open Live Deployed Service"
+                            >
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                              <span className="truncate max-w-[150px]">{deployedUrl.replace('https://', '')}</span>
+                              <ExternalLink className="w-2.5 h-2.5 opacity-70" />
+                            </a>
+                          </div>
+                        )}
+                        {consoleUrl && (
+                          <div className="flex items-center justify-between gap-3">
+                            <span className={isDark ? 'text-gray-400' : 'text-gray-500'}>GCP Console</span>
+                            <a
+                              href={consoleUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={`font-mono inline-flex items-center gap-1 text-xs hover:underline ${isDark ? 'text-emerald-accent' : 'text-google-blue'}`}
+                              title="Open Cloud Run Console"
+                            >
+                              <span>Console Dashboard</span>
+                              <ExternalLink className="w-2.5 h-2.5 opacity-70" />
+                            </a>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -669,6 +805,54 @@ export default function AgentDetailsModal({ isOpen, onClose, onEditConfiguration
                       <InfoRow label="Mode" value={service.operationMode} isDark={isDark} />
                       <InfoRow label="Notification Email" value={service.notifications?.email || service.email} isDark={isDark} />
                       <InfoRow label="Restriction" value={service.notifications?.restriction || service.restriction} isDark={isDark} />
+                      {repoUrl && (
+                        <div className={`flex items-center justify-between py-2 border-b ${isDark ? 'border-gray-800' : 'border-gray-100'}`}>
+                          <span className={`text-xs font-bold uppercase tracking-wide ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Linked GitHub Repo</span>
+                          <a
+                            href={repoUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`text-sm font-medium inline-flex items-center gap-1.5 hover:underline ${isDark ? 'text-emerald-accent' : 'text-google-blue'}`}
+                            title="Open GitHub Repository"
+                          >
+                            <GitBranch className="w-3.5 h-3.5" />
+                            <span>{linkedRepo?.owner && linkedRepo?.repo ? `${linkedRepo.owner}/${linkedRepo.repo}` : repoUrl}</span>
+                            {linkedRepo?.branch && <span className="text-xs opacity-75 font-mono">({linkedRepo.branch})</span>}
+                            <ExternalLink className="w-3 h-3 opacity-70" />
+                          </a>
+                        </div>
+                      )}
+                      {deployedUrl && (
+                        <div className={`flex items-center justify-between py-2 border-b ${isDark ? 'border-gray-800' : 'border-gray-100'}`}>
+                          <span className={`text-xs font-bold uppercase tracking-wide ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Live Deployed URL</span>
+                          <a
+                            href={deployedUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`text-sm font-medium inline-flex items-center gap-1.5 hover:underline ${isDark ? 'text-emerald-accent' : 'text-google-blue'}`}
+                            title="Open Deployed URL"
+                          >
+                            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                            <span className="font-mono text-xs">{deployedUrl}</span>
+                            <ExternalLink className="w-3 h-3 opacity-70" />
+                          </a>
+                        </div>
+                      )}
+                      {consoleUrl && (
+                        <div className={`flex items-center justify-between py-2 border-b ${isDark ? 'border-gray-800' : 'border-gray-100'}`}>
+                          <span className={`text-xs font-bold uppercase tracking-wide ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Cloud Run Console</span>
+                          <a
+                            href={consoleUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`text-sm font-medium inline-flex items-center gap-1.5 hover:underline ${isDark ? 'text-emerald-accent' : 'text-google-blue'}`}
+                            title="Open Cloud Run Console"
+                          >
+                            <span>Open in GCP Console</span>
+                            <ExternalLink className="w-3 h-3 opacity-70" />
+                          </a>
+                        </div>
+                      )}
                     </>
                   )}
                 </div>
@@ -707,6 +891,48 @@ export default function AgentDetailsModal({ isOpen, onClose, onEditConfiguration
               {streamError && (
                 <div className={`text-xs font-semibold p-3 rounded-md border mb-3 ${isDark ? 'text-amber-300 bg-amber-500/10 border-amber-400/30' : 'text-amber-700 bg-amber-100 border-amber-300'}`}>
                   {streamError}
+                </div>
+              )}
+
+              <div className={`mb-3 p-2.5 rounded-lg border flex items-center justify-between gap-3 ${
+                isDark 
+                  ? 'bg-gradient-to-r from-emerald-950/40 to-sky-950/40 border-emerald-500/30' 
+                  : 'bg-gradient-to-r from-emerald-50/80 to-sky-50/80 border-emerald-200'
+              }`}>
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                  <div>
+                    <span className={`text-[11px] font-bold block ${isDark ? 'text-white' : 'text-gray-900'}`}>Self-Healing Microservice</span>
+                    <span className={`text-[10px] block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Auto-repair code crashes & exceptions</span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleTriggerSelfHeal}
+                  disabled={isSelfHealing}
+                  className={`px-3 py-1.5 rounded-md text-[11px] font-bold flex items-center gap-1.5 transition-all shadow-sm ${
+                    isDark 
+                      ? 'bg-emerald-500 hover:bg-emerald-400 text-dark-bg font-extrabold' 
+                      : 'bg-emerald-600 hover:bg-emerald-700 text-white font-bold'
+                  } disabled:opacity-50`}
+                  title="Trigger automated code fix on GitHub repository"
+                >
+                  {isSelfHealing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                  <span>{isSelfHealing ? 'Healing...' : 'Self-Heal'}</span>
+                </button>
+              </div>
+
+              {selfHealResult && (
+                <div className={`text-xs p-2.5 rounded-lg border mb-3 font-mono ${
+                  selfHealResult.status === 'success'
+                    ? (isDark ? 'bg-emerald-950/50 border-emerald-500/40 text-emerald-200' : 'bg-emerald-50 border-emerald-200 text-emerald-800')
+                    : (isDark ? 'bg-amber-950/40 border-amber-500/30 text-amber-200' : 'bg-amber-50 border-amber-200 text-amber-800')
+                }`}>
+                  <div className="font-bold flex items-center justify-between mb-1">
+                    <span>STATUS: {selfHealResult.status?.toUpperCase()}</span>
+                    <button onClick={() => setSelfHealResult(null)} className="text-[10px] opacity-70 hover:opacity-100">✕</button>
+                  </div>
+                  <div>{selfHealResult.fix_result?.summary || selfHealResult.error || 'Fix request processed.'}</div>
                 </div>
               )}
 
